@@ -28,8 +28,8 @@ class OnlineSession:
             self.ws_url = self.base_url
         else:
             self.ws_url = "wss://" + self.base_url
-        self.room = quote(room.strip()[:32] or "OPEN-LOBBY")
-        self.nickname = quote(nickname.strip()[:20] or "Driver")
+        self.room = quote(room.strip()[:32] or "OPEN-LOBBY", safe="")
+        self.nickname = quote(nickname.strip()[:20] or "Driver", safe="")
         self.connected = False
         self.closed = False
         self.error: str | None = None
