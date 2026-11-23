@@ -1,10 +1,7 @@
 """Lightweight racing-line AI for the first circuit test."""
 from __future__ import annotations
-
 import math
-
 from panda3d.core import NodePath
-
 from .physics import Controls, VehiclePhysics
 from .track import RacingCircuit
 from .vehicle import SportsCar
@@ -21,6 +18,7 @@ class AIDriver:
         tangent_x = -rx * math.sin(start_angle)
         tangent_y = ry * math.cos(start_angle)
         heading = math.atan2(-tangent_x, tangent_y)
+        self.start_pose = (x, y, heading)
         self.physics = VehiclePhysics(x=x, y=y, heading=heading)
         self.car = SportsCar(parent, paint=paint)
         self.label = label
@@ -29,6 +27,12 @@ class AIDriver:
     @staticmethod
     def _wrap_angle(angle: float) -> float:
         return (angle + math.pi) % (2.0 * math.pi) - math.pi
+
+    def reset(self) -> None:
+        x, y, heading = self.start_pose
+        self.physics.reset(x, y, heading)
+        self.car.reset_pose()
+        self.car.update(x, y, heading, 0.0, 0.0, 0.0)
 
     def update(self, dt: float) -> None:
         p = self.physics
