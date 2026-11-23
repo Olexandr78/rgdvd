@@ -15,6 +15,7 @@ from panda3d.core import (
 
 from rgdvd import __version__
 from rgdvd.ai import AIDriver
+from rgdvd.cars import CAR_SPECS, get_car_spec, unlocked_cars
 from rgdvd.config import load_config, save_config
 from rgdvd.network import LanSession
 from rgdvd.online import OnlineSession
@@ -32,20 +33,15 @@ loadPrcFileData("", "textures-power-2 none")
 
 
 class RGDVDGame(ShowBase):
-    PAINTS = [
-        ("GT Red", (0.64, 0.018, 0.012, 1.0)),
-        ("Electric Blue", (0.025, 0.17, 0.66, 1.0)),
-        ("Competition Yellow", (0.88, 0.55, 0.025, 1.0)),
-        ("Graphite", (0.13, 0.15, 0.17, 1.0)),
-        ("Pearl White", (0.78, 0.80, 0.82, 1.0)),
-    ]
-
     def __init__(self) -> None:
         super().__init__()
         self.disableMouse()
         self.setBackgroundColor(0.44, 0.61, 0.75, 1)
         self.config = load_config()
         self.profile = CareerProfile()
+        self.car_id = str(self.config.get("car_id", "street_gt"))
+        if not self.profile.is_unlocked(self.car_id):
+            self.car_id = "street_gt"
         props = WindowProperties()
         props.setTitle(f"RGDVD {__version__} | Racing")
         props.setCursorHidden(False)
@@ -72,8 +68,6 @@ class RGDVDGame(ShowBase):
         self.last_x = 0.0
         self.last_lap_time = 0.0
         self.best_lap: float | None = None
-        self.paint_index = max(0, min(
-            len(self.PAINTS)-1, int(self.config.get("paint_index", 0))))
         self.controls = {key: False for key in (
             "w", "s", "a", "d", "arrow_up", "arrow_down",
             "arrow_left", "arrow_right", "space",
@@ -126,7 +120,7 @@ class RGDVDGame(ShowBase):
         self._menu_button("HOST LAN", -0.52, 0.02, self.host_lan)
         self._menu_button("FIND LAN GAME", 0.52, 0.02, self.join_lan)
         self._menu_button("ONLINE ROOM", -0.52, -0.18, self.join_online)
-        self._menu_button("CHANGE CAR COLOUR", 0.52, -0.18, self.change_paint)
+        self._menu_button("GARAGE / NEXT CAR", 0.52, -0.18, self.next_car)
         self._menu_button("GRAPHICS SETTINGS", -0.52, -0.38, self.cycle_quality)
         self._menu_button("EXIT", 0.52, -0.38, self.userExit)
 
@@ -219,11 +213,12 @@ class RGDVDGame(ShowBase):
     def _menu_summary(self) -> str:
         wins = self.profile.data.get("wins", 0)
         races = self.profile.data.get("races", 0)
-        paint_name = self.PAINTS[self.paint_index][0]
+        car_name = get_car_spec(self.car_id)["name"]
         quality = str(self.config.get("quality", "medium")).upper()
+        unlocked_count = len(unlocked_cars(self.profile.data.get("unlocked_cars", [])))
         return (f"CAREER  {races} RACES / {wins} WINS     "
                 f"CREDITS  {self.profile.credits:,}     "
-                f"CAR  {paint_name}     GRAPHICS  {quality}")
+                f"CAR  {car_name} ({unlocked_count}/{len(CAR_SPECS)})     GRAPHICS  {quality}")
 
     def _refresh_menu(self, message: str | None = None) -> None:
         self.menu_status["text"] = message or self._menu_summary()
@@ -240,7 +235,7 @@ class RGDVDGame(ShowBase):
         self.config["nickname"] = self._nickname()
         self.config["room"] = self._room()
         self.config["server_url"] = self.server_entry.get().strip()
-        self.config["paint_index"] = self.paint_index
+        self.config["car_id"] = self.car_id
         save_config(self.config)
 
     def _bind_events(self) -> None:
@@ -253,8 +248,20 @@ class RGDVDGame(ShowBase):
     def _set_control(self, key: str, value: bool) -> None:
         self.controls[key] = value
 
-    def change_paint(self) -> None:
-        self.paint_index = (self.paint_index + 1) % len(self.PAINTS)
+    def next_car(self) -> None:
+        owned = unlocked_cars(self.profile.data.get("unlocked_cars", []))
+        if not owned:
+            owned = ["street_gt"]
+        current_index = owned.index(self.car_id) if self.car_id in owned else 0
+        if len(owned) == 1:
+            locked = [car_id for car_id in CAR_SPECS if car_id not in owned]
+            if locked:
+                next_spec = get_car_spec(locked[0])
+                self._refresh_menu(
+                    f"{next_spec['name']} unlocks after {next_spec['required_wins']} career wins."
+                )
+                return
+        self.car_id = owned[(current_index + 1) % len(owned)]
         self._save_menu_settings()
         self._refresh_menu()
 
@@ -350,8 +357,8 @@ class RGDVDGame(ShowBase):
         self.scene_root = self.render.attachNewNode("race-scene")
         self._setup_lighting()
         self.track = RacingCircuit(self.scene_root)
-        self.physics = VehiclePhysics()
-        paint = self.PAINTS[self.paint_index][1]
+        self.physics = VehiclePhysics(car_id=self.car_id)
+        paint = get_car_spec(self.car_id)["paint"]
         self.car = SportsCar(self.scene_root, paint=paint)
         self.ai_drivers = []
         self.remote_cars = {}
