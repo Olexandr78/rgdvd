@@ -466,11 +466,13 @@ class RGDVDGame(ShowBase):
         if now - self.last_network_send >= 1/15:
             self.last_network_send = now
             self.network_session.send_state(self.physics.snapshot())
+        seen_players: set[str] = set()
         for player in self.network_session.poll():
             player_id = str(player.get("id", ""))
             state = player.get("state", {})
             if not player_id or not isinstance(state, dict):
                 continue
+            seen_players.add(player_id)
             if player_id not in self.remote_cars and self.scene_root is not None:
                 self.remote_cars[player_id] = SportsCar(
                     self.scene_root, paint=(0.03, 0.30, 0.74, 1.0))
@@ -483,6 +485,8 @@ class RGDVDGame(ShowBase):
                                float(state.get("speed", 0)), 0.0, dt)
                 except (TypeError, ValueError):
                     pass
+        for player_id in set(self.remote_cars) - seen_players:
+            self.remote_cars.pop(player_id).root.removeNode()
         if getattr(self.network_session, "error", None):
             self.network_error = self.network_session.error
 
