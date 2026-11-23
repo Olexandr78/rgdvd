@@ -130,16 +130,28 @@ class RGDVDGame(ShowBase):
         self._menu_button("GRAPHICS SETTINGS", -0.52, -0.38, self.cycle_quality)
         self._menu_button("EXIT", 0.52, -0.38, self.userExit)
 
+        DirectLabel(
+            parent=self.menu, text="ONLINE SERVER ADDRESS",
+            text_scale=0.021, text_fg=(0.56, 0.66, 0.72, 1),
+            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.49),
+        )
+        self.server_entry = DirectEntry(
+            parent=self.menu,
+            initialText=str(self.config.get("server_url", "wss://rgdvd-online.onrender.com")),
+            numLines=1, width=34, scale=0.027, pos=(-0.43, 0, -0.55),
+            frameColor=(0.09, 0.12, 0.15, 1),
+            text_fg=(0.84, 0.89, 0.92, 1), cursorKeys=1,
+        )
         self.menu_status = DirectLabel(
             parent=self.menu, text=self._menu_summary(),
-            text_scale=0.025, text_fg=(0.62, 0.76, 0.81, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.63),
+            text_scale=0.022, text_fg=(0.62, 0.76, 0.81, 1),
+            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.72),
         )
         DirectLabel(
             parent=self.menu,
             text="W/↑ GAS     S/↓ BRAKE     A/D STEER     SPACE HANDBRAKE     R RESET     ESC PAUSE",
-            text_scale=0.023, text_fg=(0.58, 0.64, 0.69, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.84),
+            text_scale=0.021, text_fg=(0.58, 0.64, 0.69, 1),
+            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.90),
         )
 
         self.pause_menu = DirectFrame(
@@ -227,6 +239,7 @@ class RGDVDGame(ShowBase):
     def _save_menu_settings(self) -> None:
         self.config["nickname"] = self._nickname()
         self.config["room"] = self._room()
+        self.config["server_url"] = self.server_entry.get().strip()
         self.config["paint_index"] = self.paint_index
         save_config(self.config)
 
