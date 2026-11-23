@@ -398,7 +398,7 @@ class RGDVDGame(ShowBase):
         self.physics.reset()
         self.car.reset_pose()
         for driver in self.ai_drivers:
-            driver.physics.reset(driver.physics.x, driver.physics.y, driver.physics.heading)
+            driver.reset()
         self.race_time = 0.0
         self.lap = 1
         self.last_lap_time = 0.0
