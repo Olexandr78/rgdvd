@@ -306,13 +306,6 @@ class RGDVDGame(ShowBase):
             command=command,
         )
 
-(self, text: str, x: float, z: float, command: Any) -> None:
-        DirectButton(
-            parent=self.menu, text=text, text_scale=0.038,
-            text_fg=(0.95, 0.96, 0.97, 1), frameColor=(0.12, 0.17, 0.21, 1),
-            relief=1, borderWidth=(0.008, 0.008),
-            scale=0.78, pos=(x, 0, z), command=command,
-        )
 
     def _menu_summary(self) -> str:
         wins = self.profile.data.get("wins", 0)
