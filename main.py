@@ -126,13 +126,13 @@ class RGDVDGame(ShowBase):
 
         DirectLabel(
             parent=self.menu, text="SINGLE PLAYER",
-            text_scale=0.035, text_fg=(0.90, 0.93, 0.95, 1),
+            text_scale=0.046, text_fg=(0.90, 0.93, 0.95, 1),
             frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.545),
             text_align=TextNode.ALeft,
         )
         DirectLabel(
             parent=self.menu, text="Build your career or jump straight into a race.",
-            text_scale=0.022, text_fg=(0.55, 0.63, 0.70, 1),
+            text_scale=0.027, text_fg=(0.55, 0.63, 0.70, 1),
             frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.475),
             text_align=TextNode.ALeft,
         )
@@ -143,7 +143,7 @@ class RGDVDGame(ShowBase):
         DirectLabel(
             parent=self.menu,
             text="3-LAP EVENTS     /     AI RIVALS     /     LOCAL SAVES",
-            text_scale=0.021, text_fg=(0.53, 0.62, 0.69, 1),
+            text_scale=0.025, text_fg=(0.53, 0.62, 0.69, 1),
             frameColor=(0, 0, 0, 0), pos=(-0.76, 0, -0.265),
         )
 
@@ -178,13 +178,13 @@ class RGDVDGame(ShowBase):
         )
         DirectLabel(
             parent=self.menu, text="DRIVER",
-            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
+            text_scale=0.025, text_fg=(0.57, 0.67, 0.75, 1),
             frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.535),
             text_align=TextNode.ALeft,
         )
         self.nickname_entry = DirectEntry(
             parent=self.menu, initialText=str(self.config.get("nickname", "Driver")),
-            numLines=1, width=13, scale=0.034, pos=(-1.40, 0, -0.665),
+            numLines=1, width=13, scale=0.040, pos=(-1.40, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
         )
@@ -196,7 +196,7 @@ class RGDVDGame(ShowBase):
         )
         self.room_entry = DirectEntry(
             parent=self.menu, initialText=str(self.config.get("room", "OPEN-LOBBY")),
-            numLines=1, width=14, scale=0.034, pos=(-0.43, 0, -0.665),
+            numLines=1, width=14, scale=0.040, pos=(-0.43, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
         )
@@ -209,14 +209,14 @@ class RGDVDGame(ShowBase):
         self.server_entry = DirectEntry(
             parent=self.menu,
             initialText=str(self.config.get("server_url", "wss://rgdvd-online.onrender.com")),
-            numLines=1, width=34, scale=0.027, pos=(0.53, 0, -0.665),
+            numLines=1, width=34, scale=0.031, pos=(0.53, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.86, 0.90, 0.93, 1), cursorKeys=1,
         )
 
         self.menu_status = DirectLabel(
             parent=self.menu, text=self._menu_summary(),
-            text_scale=0.023, text_fg=(0.72, 0.79, 0.84, 1),
+            text_scale=0.027, text_fg=(0.72, 0.79, 0.84, 1),
             frameColor=(0, 0, 0, 0), pos=(0, 0, -0.835),
         )
         self._menu_button("GARAGE / NEXT CAR", -0.78, -0.935, self.next_car,
@@ -296,7 +296,7 @@ class RGDVDGame(ShowBase):
         else:
             color = (0.12, 0.17, 0.21, 1)
         height = 0.060 if compact else 0.085
-        text_size = 0.027 if compact else 0.043
+        text_size = 0.032 if compact else 0.047
         DirectButton(
             parent=self.menu, text=text, text_scale=text_size,
             text_fg=(0.96, 0.97, 0.98, 1),
