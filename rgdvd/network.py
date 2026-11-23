@@ -1,6 +1,7 @@
 """LAN multiplayer transport using UDP discovery and state snapshots."""
 from __future__ import annotations
 import json
+import math
 import socket
 import threading
 import time
@@ -10,6 +11,7 @@ from typing import Any
 DISCOVERY_PORT = 39770
 PROTOCOL = "rgdvd-lan-1"
 MAX_PACKET = 8192
+MAX_LAN_PLAYERS = 16
 
 
 def _encode(packet: dict[str, Any]) -> bytes:
@@ -168,6 +170,8 @@ class LanSession:
             if not player_id:
                 return
             with self._lock:
+                if player_id not in self.players and len(self.players) >= MAX_LAN_PLAYERS:
+                    return
                 self.players[player_id] = {
                     "id": player_id, "name": str(packet.get("name", "Driver"))[:20],
                     "state": {"x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0},
@@ -180,14 +184,18 @@ class LanSession:
             player_id, state = str(packet.get("id", ""))[:20], packet.get("state", {})
             if not isinstance(state, dict):
                 return
+            clean_state = {}
+            for key in ("x", "y", "heading", "speed"):
+                try:
+                    value = float(state.get(key, 0.0))
+                except (TypeError, ValueError):
+                    value = 0.0
+                clean_state[key] = value if math.isfinite(value) and abs(value) < 100000 else 0.0
             with self._lock:
                 player = self.players.get(player_id)
                 if player and player.get("address") == address:
                     player["name"] = str(packet.get("name", player["name"]))[:20]
-                    player["state"] = {
-                        key: float(state.get(key, 0.0))
-                        for key in ("x", "y", "heading", "speed")
-                    }
+                    player["state"] = clean_state
                     player["last_seen"] = now
 
     def _broadcast_snapshot(self) -> None:
