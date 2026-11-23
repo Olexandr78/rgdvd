@@ -78,100 +78,181 @@ class RGDVDGame(ShowBase):
         self.taskMgr.add(self._camera_update, "rgdvd-camera-update")
 
     def _setup_menu(self) -> None:
+        # Full-bleed carbon-dark background; the old 2.666-wide frame left
+        # unused blue strips on both sides of a 16:9 window.
         self.menu = DirectFrame(
-            frameColor=(0.018, 0.027, 0.040, 0.96),
-            frameSize=(-1.333, 1.333, -1.0, 1.0), pos=(0, 0, 0),
+            frameColor=(0.025, 0.035, 0.048, 1),
+            frameSize=(-1.78, 1.78, -1.0, 1.0), pos=(0, 0, 0),
+        )
+
+        # Inner surface and racing-red header accent.
+        DirectFrame(
+            parent=self.menu, frameColor=(0.040, 0.054, 0.070, 1),
+            frameSize=(-1.66, 1.66, -0.96, 0.96), pos=(0, 0, 0),
+        )
+        DirectFrame(
+            parent=self.menu, frameColor=(0.88, 0.075, 0.045, 1),
+            frameSize=(-1.55, 1.55, -0.009, 0.009), pos=(0, 0, 0.70),
+        )
+
+        DirectLabel(
+            parent=self.menu, text="RGDVD", text_scale=0.125,
+            text_fg=(0.96, 0.97, 0.98, 1),
+            text_shadow=(0, 0, 0, 0.5), frameColor=(0, 0, 0, 0),
+            pos=(-1.42, 0, 0.83), text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="RGDVD", text_scale=0.16,
-            text_fg=(0.94, 0.96, 0.97, 1), text_shadow=(0, 0, 0, 0.7),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, 0.88),
+            parent=self.menu, text="RACING  /  DRIVE YOUR LINE",
+            text_scale=0.027, text_fg=(0.57, 0.66, 0.74, 1),
+            frameColor=(0, 0, 0, 0), pos=(-0.83, 0, 0.835),
+            text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="REAL DRIVING. ONE DISC. THREE WAYS TO RACE.",
-            text_scale=0.029, text_fg=(0.56, 0.68, 0.75, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, 0.73),
+            parent=self.menu, text=f"BUILD  {__version__}",
+            text_scale=0.026, text_fg=(0.77, 0.82, 0.86, 1),
+            frameColor=(0, 0, 0, 0), pos=(1.43, 0, 0.835),
+            text_align=TextNode.ARight,
+        )
+
+        # Two balanced action panels.
+        DirectFrame(
+            parent=self.menu, frameColor=(0.065, 0.082, 0.102, 1),
+            frameSize=(-0.70, 0.70, -0.54, 0.54), pos=(-0.76, 0, 0.105),
+        )
+        DirectFrame(
+            parent=self.menu, frameColor=(0.065, 0.082, 0.102, 1),
+            frameSize=(-0.70, 0.70, -0.54, 0.54), pos=(0.76, 0, 0.105),
+        )
+
+        DirectLabel(
+            parent=self.menu, text="SINGLE PLAYER",
+            text_scale=0.035, text_fg=(0.90, 0.93, 0.95, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.545),
+            text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="DRIVER NAME",
-            text_scale=0.025, text_fg=(0.69, 0.75, 0.79, 1),
-            frameColor=(0, 0, 0, 0), pos=(-0.56, 0, 0.57),
+            parent=self.menu, text="Build your career or jump straight into a race.",
+            text_scale=0.022, text_fg=(0.55, 0.63, 0.70, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.475),
+            text_align=TextNode.ALeft,
+        )
+        self._menu_button("CAREER", -0.76, 0.285, self.start_career,
+                          width=0.59, accent=True)
+        self._menu_button("QUICK RACE", -0.76, 0.055, self.start_quick_race,
+                          width=0.59)
+        DirectLabel(
+            parent=self.menu,
+            text="3-LAP EVENTS     /     AI RIVALS     /     LOCAL SAVES",
+            text_scale=0.021, text_fg=(0.53, 0.62, 0.69, 1),
+            frameColor=(0, 0, 0, 0), pos=(-0.76, 0, -0.265),
+        )
+
+        DirectLabel(
+            parent=self.menu, text="MULTIPLAYER",
+            text_scale=0.035, text_fg=(0.90, 0.93, 0.95, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.545),
+            text_align=TextNode.ALeft,
+        )
+        DirectLabel(
+            parent=self.menu, text="Race together over Wi-Fi or the internet.",
+            text_scale=0.022, text_fg=(0.55, 0.63, 0.70, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.475),
+            text_align=TextNode.ALeft,
+        )
+        self._menu_button("HOST LAN GAME", 0.76, 0.31, self.host_lan,
+                          width=0.59)
+        self._menu_button("FIND LAN GAME", 0.76, 0.105, self.join_lan,
+                          width=0.59)
+        self._menu_button("ONLINE ROOM", 0.76, -0.10, self.join_online,
+                          width=0.59, accent=True)
+        DirectLabel(
+            parent=self.menu, text="LAN  /  NO INTERNET REQUIRED",
+            text_scale=0.021, text_fg=(0.53, 0.62, 0.69, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.76, 0, -0.265),
+        )
+
+        # Compact driver / lobby / server settings strip.
+        DirectFrame(
+            parent=self.menu, frameColor=(0.052, 0.068, 0.085, 1),
+            frameSize=(-1.48, 1.48, -0.155, 0.155), pos=(0, 0, -0.625),
+        )
+        DirectLabel(
+            parent=self.menu, text="DRIVER",
+            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.535),
+            text_align=TextNode.ALeft,
         )
         self.nickname_entry = DirectEntry(
             parent=self.menu, initialText=str(self.config.get("nickname", "Driver")),
-            numLines=1, width=14, scale=0.043, pos=(-0.82, 0, 0.49),
-            frameColor=(0.11, 0.15, 0.19, 1),
+            numLines=1, width=13, scale=0.034, pos=(-1.40, 0, -0.665),
+            frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
         )
         DirectLabel(
             parent=self.menu, text="ROOM CODE",
-            text_scale=0.025, text_fg=(0.69, 0.75, 0.79, 1),
-            frameColor=(0, 0, 0, 0), pos=(0.56, 0, 0.57),
+            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
+            frameColor=(0, 0, 0, 0), pos=(-0.43, 0, -0.535),
+            text_align=TextNode.ALeft,
         )
         self.room_entry = DirectEntry(
             parent=self.menu, initialText=str(self.config.get("room", "OPEN-LOBBY")),
-            numLines=1, width=14, scale=0.043, pos=(0.23, 0, 0.49),
-            frameColor=(0.11, 0.15, 0.19, 1),
+            numLines=1, width=14, scale=0.034, pos=(-0.43, 0, -0.665),
+            frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
         )
-
-        self._menu_button("CAREER", -0.52, 0.22, self.start_career)
-        self._menu_button("QUICK RACE", 0.52, 0.22, self.start_quick_race)
-        self._menu_button("HOST LAN", -0.52, 0.02, self.host_lan)
-        self._menu_button("FIND LAN GAME", 0.52, 0.02, self.join_lan)
-        self._menu_button("ONLINE ROOM", -0.52, -0.18, self.join_online)
-        self._menu_button("GARAGE / NEXT CAR", 0.52, -0.18, self.next_car)
-        self._menu_button("GRAPHICS SETTINGS", -0.52, -0.38, self.cycle_quality)
-        self._menu_button("EXIT", 0.52, -0.38, self.userExit)
-
         DirectLabel(
-            parent=self.menu, text="ONLINE SERVER ADDRESS",
-            text_scale=0.021, text_fg=(0.56, 0.66, 0.72, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.49),
+            parent=self.menu, text="ONLINE SERVER",
+            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.53, 0, -0.535),
+            text_align=TextNode.ALeft,
         )
         self.server_entry = DirectEntry(
             parent=self.menu,
             initialText=str(self.config.get("server_url", "wss://rgdvd-online.onrender.com")),
-            numLines=1, width=34, scale=0.027, pos=(-0.43, 0, -0.55),
-            frameColor=(0.09, 0.12, 0.15, 1),
-            text_fg=(0.84, 0.89, 0.92, 1), cursorKeys=1,
-        )
-        self.menu_status = DirectLabel(
-            parent=self.menu, text=self._menu_summary(),
-            text_scale=0.022, text_fg=(0.62, 0.76, 0.81, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.72),
-        )
-        DirectLabel(
-            parent=self.menu,
-            text="W/↑ GAS     S/↓ BRAKE     A/D STEER     SPACE HANDBRAKE     R RESET     ESC PAUSE",
-            text_scale=0.021, text_fg=(0.58, 0.64, 0.69, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.90),
+            numLines=1, width=34, scale=0.027, pos=(0.53, 0, -0.665),
+            frameColor=(0.11, 0.145, 0.18, 1),
+            text_fg=(0.86, 0.90, 0.93, 1), cursorKeys=1,
         )
 
+        self.menu_status = DirectLabel(
+            parent=self.menu, text=self._menu_summary(),
+            text_scale=0.023, text_fg=(0.72, 0.79, 0.84, 1),
+            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.835),
+        )
+        self._menu_button("GARAGE / NEXT CAR", -0.78, -0.935, self.next_car,
+                          width=0.48, compact=True)
+        self._menu_button("GRAPHICS", 0.0, -0.935, self.cycle_quality,
+                          width=0.40, compact=True)
+        self._menu_button("EXIT", 0.78, -0.935, self.userExit,
+                          width=0.40, compact=True, danger=True)
+
         self.pause_menu = DirectFrame(
-            frameColor=(0.015, 0.022, 0.032, 0.90),
-            frameSize=(-1.333, 1.333, -1.0, 1.0), pos=(0, 0, 0),
+            frameColor=(0.015, 0.022, 0.032, 0.94),
+            frameSize=(-1.78, 1.78, -1.0, 1.0), pos=(0, 0, 0),
         )
         DirectLabel(parent=self.pause_menu, text="PAUSED",
                     text_scale=0.13, text_fg=(0.96, 0.97, 0.98, 1),
                     frameColor=(0, 0, 0, 0), pos=(0, 0, 0.31))
         DirectButton(parent=self.pause_menu, text="RESUME",
                      text_scale=0.05, scale=1.0, pos=(0, 0, 0.06),
-                     frameColor=(0.70, 0.055, 0.035, 1),
+                     frameSize=(-0.55, 0.55, -0.09, 0.09),
+                     frameColor=(0.72, 0.08, 0.045, 1),
                      command=self.resume_race)
         DirectButton(parent=self.pause_menu, text="RESTART RACE",
-                     text_scale=0.045, scale=0.9, pos=(0, 0, -0.14),
-                     frameColor=(0.10, 0.13, 0.16, 1),
+                     text_scale=0.043, scale=1.0, pos=(0, 0, -0.16),
+                     frameSize=(-0.55, 0.55, -0.09, 0.09),
+                     frameColor=(0.10, 0.14, 0.18, 1),
                      command=self.restart_race)
         DirectButton(parent=self.pause_menu, text="RETURN TO MENU",
-                     text_scale=0.04, scale=0.85, pos=(0, 0, -0.34),
-                     frameColor=(0.10, 0.13, 0.16, 1),
+                     text_scale=0.040, scale=1.0, pos=(0, 0, -0.38),
+                     frameSize=(-0.55, 0.55, -0.09, 0.09),
+                     frameColor=(0.10, 0.14, 0.18, 1),
                      command=self.return_to_menu)
         self.pause_menu.hide()
 
         self.result_menu = DirectFrame(
-            frameColor=(0.015, 0.022, 0.032, 0.92),
-            frameSize=(-1.333, 1.333, -1.0, 1.0), pos=(0, 0, 0),
+            frameColor=(0.015, 0.022, 0.032, 0.94),
+            frameSize=(-1.78, 1.78, -1.0, 1.0), pos=(0, 0, 0),
         )
         self.result_label = DirectLabel(
             parent=self.result_menu, text="RACE COMPLETE",
@@ -184,13 +265,14 @@ class RGDVDGame(ShowBase):
             frameColor=(0, 0, 0, 0), pos=(0, 0, 0.03),
         )
         DirectButton(parent=self.result_menu, text="BACK TO MENU",
-                     text_scale=0.045, scale=0.9, pos=(0, 0, -0.28),
-                     frameColor=(0.70, 0.055, 0.035, 1),
+                     text_scale=0.045, scale=1.0, pos=(0, 0, -0.28),
+                     frameSize=(-0.58, 0.58, -0.09, 0.09),
+                     frameColor=(0.72, 0.08, 0.045, 1),
                      command=self.return_to_menu)
         self.result_menu.hide()
 
         self.hud_text = OnscreenText(
-            text="", pos=(-1.28, 0.91), scale=0.043,
+            text="", pos=(-1.70, 0.91), scale=0.043,
             fg=(0.95, 0.97, 0.98, 1), align=TextNode.ALeft,
             shadow=(0, 0, 0, 0.8), mayChange=True,
         )
@@ -202,7 +284,29 @@ class RGDVDGame(ShowBase):
         )
         self.hud_bottom.hide()
 
-    def _menu_button(self, text: str, x: float, z: float, command: Any) -> None:
+    def _menu_button(self, text: str, x: float, z: float, command: Any,
+                     width: float = 0.59, accent: bool = False,
+                     compact: bool = False, danger: bool = False) -> None:
+        if danger:
+            color = (0.34, 0.075, 0.065, 1)
+        elif accent:
+            color = (0.75, 0.075, 0.045, 1)
+        elif compact:
+            color = (0.105, 0.14, 0.18, 1)
+        else:
+            color = (0.12, 0.17, 0.21, 1)
+        height = 0.060 if compact else 0.085
+        text_size = 0.027 if compact else 0.043
+        DirectButton(
+            parent=self.menu, text=text, text_scale=text_size,
+            text_fg=(0.96, 0.97, 0.98, 1),
+            frameColor=color, relief=1, borderWidth=(0.008, 0.008),
+            frameSize=(-width, width, -height, height),
+            scale=1.0, pos=(x, 0, z),
+            command=command,
+        )
+
+(self, text: str, x: float, z: float, command: Any) -> None:
         DirectButton(
             parent=self.menu, text=text, text_scale=0.038,
             text_fg=(0.95, 0.96, 0.97, 1), frameColor=(0.12, 0.17, 0.21, 1),
