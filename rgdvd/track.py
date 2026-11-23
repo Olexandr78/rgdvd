@@ -18,7 +18,8 @@ class RacingCircuit:
     INNER_RY = 125.0
     SEGMENTS = 256
 
-    def __init__(self, parent: NodePath) -> None:
+    def __init__(self, parent: NodePath, quality: str = "medium") -> None:
+        self.quality = quality if quality in ("low", "medium", "high") else "medium"
         self.root = parent.attachNewNode("coastal-grand-prix-circuit")
         self._build_ground()
         self._build_asphalt()
@@ -216,8 +217,10 @@ class RacingCircuit:
 
     def _build_environment(self) -> None:
         rng = random.Random(42)
-        for i in range(90):
-            angle = 2 * math.pi * i / 90
+        tree_count = {"low": 40, "medium": 90, "high": 140}[self.quality]
+        hill_count = {"low": 10, "medium": 18, "high": 24}[self.quality]
+        for i in range(tree_count):
+            angle = 2 * math.pi * i / tree_count
             radius_x = rng.uniform(185, 300)
             radius_y = radius_x * 1.36
             x = radius_x * math.cos(angle) + rng.uniform(-10, 10)
@@ -232,8 +235,8 @@ class RacingCircuit:
                                   rng.uniform(0.055, 0.11), 1), 7)
             foliage.setPos(x, y, trunk_height + 2.5)
 
-        for i in range(18):
-            angle = 2 * math.pi * i / 18
+        for i in range(hill_count):
+            angle = 2 * math.pi * i / hill_count
             x = 430 * math.cos(angle)
             y = 510 * math.sin(angle)
             hill = cylinder_z(self.root, "distant-hill", rng.uniform(22, 44),
