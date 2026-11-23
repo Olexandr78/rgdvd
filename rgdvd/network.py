@@ -1,18 +1,11 @@
-"""LAN multiplayer transport using UDP discovery and state snapshots.
-
-One player hosts. Other computers on the same subnet discover the host by
-broadcast and exchange compact JSON packets. The host relays snapshots; the
-client never needs an internet connection.
-"""
+"""LAN multiplayer transport using UDP discovery and state snapshots."""
 from __future__ import annotations
-
 import json
 import socket
 import threading
 import time
 import uuid
 from typing import Any
-
 
 DISCOVERY_PORT = 39770
 PROTOCOL = "rgdvd-lan-1"
@@ -36,24 +29,17 @@ def _decode(data: bytes) -> dict[str, Any] | None:
 class LanSession:
     def __init__(self, sock: socket.socket, role: str, nickname: str,
                  room: str, peer: tuple[str, int] | None = None) -> None:
-        self.socket = sock
-        self.role = role
-        self.nickname = nickname[:20]
-        self.room = room[:20]
-        self.peer = peer
+        self.socket, self.role = sock, role
+        self.nickname, self.room, self.peer = nickname[:20], room[:20], peer
         self.player_id = uuid.uuid4().hex[:10]
         self.connected = role == "host"
         self.closed = False
         self.error: str | None = None
-        self.local_state: dict[str, float] = {
-            "x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0
-        }
+        self.local_state = {"x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0}
         self.players: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
-        self._last_snapshot = 0.0
-        self._last_send = 0.0
-        self._thread = threading.Thread(target=self._worker,
-                                        name="RGDVD-LAN", daemon=True)
+        self._last_snapshot = self._last_send = 0.0
+        self._thread = threading.Thread(target=self._worker, name="RGDVD-LAN", daemon=True)
         self._thread.start()
 
     @classmethod
@@ -88,24 +74,21 @@ class LanSession:
                     continue
                 packet = _decode(data)
                 if packet and packet.get("kind") == "offer":
-                    item = {
+                    found[address[0]] = {
                         "host": str(packet.get("host", "LAN host")),
                         "room": str(packet.get("room", "RGDVD")),
                         "players": int(packet.get("players", 1)),
                         "address": address[0],
                     }
-                    found[address[0]] = item
         finally:
             sock.close()
         return list(found.values())
 
     @classmethod
-    def join(cls, address: str, nickname: str,
-             timeout: float = 2.0) -> "LanSession":
+    def join(cls, address: str, nickname: str, timeout: float = 2.0) -> "LanSession":
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(0.05)
-        session = cls(sock, "client", nickname, "RGDVD",
-                      (address, DISCOVERY_PORT))
+        session = cls(sock, "client", nickname, "RGDVD", (address, DISCOVERY_PORT))
         sock.sendto(_encode({
             "protocol": PROTOCOL, "kind": "join",
             "id": session.player_id, "name": session.nickname,
@@ -119,19 +102,19 @@ class LanSession:
         return session
 
     def send_state(self, state: dict[str, float]) -> None:
+        current = {key: float(state.get(key, 0.0))
+                   for key in ("x", "y", "heading", "speed")}
         with self._lock:
-            self.local_state = {
-                key: float(state.get(key, 0.0))
-                for key in ("x", "y", "heading", "speed")
-            }
+            self.local_state = current
+            if self.role == "host" and self.player_id in self.players:
+                self.players[self.player_id]["state"] = current
         now = time.monotonic()
         if self.role == "client" and self.peer and now - self._last_send >= 1/15:
             self._last_send = now
             try:
                 self.socket.sendto(_encode({
                     "protocol": PROTOCOL, "kind": "state",
-                    "id": self.player_id, "name": self.nickname,
-                    "state": self.local_state,
+                    "id": self.player_id, "name": self.nickname, "state": current,
                 }), self.peer)
             except OSError as exc:
                 self.error = str(exc)
@@ -178,8 +161,7 @@ class LanSession:
         if kind == "discover":
             self.socket.sendto(_encode({
                 "protocol": PROTOCOL, "kind": "offer",
-                "host": self.nickname, "room": self.room,
-                "players": len(self.players),
+                "host": self.nickname, "room": self.room, "players": len(self.players),
             }), address)
         elif kind == "join":
             player_id = str(packet.get("id", ""))[:20]
@@ -187,19 +169,15 @@ class LanSession:
                 return
             with self._lock:
                 self.players[player_id] = {
-                    "id": player_id,
-                    "name": str(packet.get("name", "Driver"))[:20],
-                    "state": {"x": 0.0, "y": -148.0,
-                              "heading": -1.5708, "speed": 0.0},
+                    "id": player_id, "name": str(packet.get("name", "Driver"))[:20],
+                    "state": {"x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0},
                     "last_seen": now, "address": address,
                 }
             self.socket.sendto(_encode({
-                "protocol": PROTOCOL, "kind": "welcome",
-                "room": self.room,
+                "protocol": PROTOCOL, "kind": "welcome", "room": self.room,
             }), address)
         elif kind == "state":
-            player_id = str(packet.get("id", ""))[:20]
-            state = packet.get("state", {})
+            player_id, state = str(packet.get("id", ""))[:20], packet.get("state", {})
             if not isinstance(state, dict):
                 return
             with self._lock:
@@ -214,21 +192,12 @@ class LanSession:
 
     def _broadcast_snapshot(self) -> None:
         with self._lock:
-            snapshot = []
-            for player_id, player in self.players.items():
-                item = {
-                    "id": player_id, "name": player["name"],
-                    "state": player["state"],
-                }
-                snapshot.append(item)
-            addresses = [
-                player["address"] for player in self.players.values()
-                if player.get("address")
+            snapshot = [
+                {"id": pid, "name": p["name"], "state": p["state"]}
+                for pid, p in self.players.items()
             ]
-        packet = _encode({
-            "protocol": PROTOCOL, "kind": "snapshot",
-            "players": snapshot,
-        })
+            addresses = [p["address"] for p in self.players.values() if p.get("address")]
+        packet = _encode({"protocol": PROTOCOL, "kind": "snapshot", "players": snapshot})
         for address in addresses:
             try:
                 self.socket.sendto(packet, address)
@@ -239,13 +208,10 @@ class LanSession:
         if self.role != "host":
             return
         with self._lock:
-            stale = [
-                player_id for player_id, player in self.players.items()
-                if player_id != self.player_id
-                and now - player.get("last_seen", now) > 8.0
-            ]
-            for player_id in stale:
-                self.players.pop(player_id, None)
+            stale = [pid for pid, p in self.players.items()
+                     if pid != self.player_id and now - p.get("last_seen", now) > 8.0]
+            for pid in stale:
+                self.players.pop(pid, None)
 
     def close(self) -> None:
         self.closed = True
