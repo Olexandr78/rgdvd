@@ -385,6 +385,7 @@ class RGDVDGame(ShowBase):
         self.hud_text.show()
         self.hud_bottom.show()
         self.state = "RACING"
+        self.network_error = None
         self.race_time = 0.0
         self.lap = 1
         self.last_lap_time = 0.0
