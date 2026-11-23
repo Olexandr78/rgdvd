@@ -29,7 +29,15 @@ class VehiclePhysics:
     MAX_REVERSE_MPS = 11.0
 
     def __init__(self, x: float = 0.0, y: float = -148.0,
-                 heading: float = -math.pi / 2) -> None:
+                 heading: float = -math.pi / 2,
+                 car_id: str = "street_gt") -> None:
+        from .cars import get_car_spec
+        spec = get_car_spec(car_id)
+        self.car_id = car_id if car_id in __import__("rgdvd.cars", fromlist=["CAR_SPECS"]).CAR_SPECS else "street_gt"
+        self.MASS_KG = float(spec["mass_kg"])
+        self.MAX_FORWARD_MPS = float(spec["max_speed_mps"])
+        self.TORQUE_MULTIPLIER = float(spec["torque_multiplier"])
+        self.GRIP_MULTIPLIER = float(spec["grip_multiplier"])
         self.x = x
         self.y = y
         self.heading = heading
@@ -58,11 +66,12 @@ class VehiclePhysics:
         points = ((850, 250), (1800, 335), (3200, 390),
                   (4800, 410), (6100, 385), (7600, 315))
         if rpm <= points[0][0]:
-            return points[0][1]
+            return points[0][1] * self.TORQUE_MULTIPLIER
         for (r0, t0), (r1, t1) in zip(points, points[1:]):
             if rpm <= r1:
-                return t0 + (t1 - t0) * ((rpm - r0) / (r1 - r0))
-        return points[-1][1]
+                torque = t0 + (t1 - t0) * ((rpm - r0) / (r1 - r0))
+                return torque * self.TORQUE_MULTIPLIER
+        return points[-1][1] * self.TORQUE_MULTIPLIER
 
     def _calculate_rpm(self) -> float:
         if abs(self.speed) < 1.0:
@@ -128,7 +137,7 @@ class VehiclePhysics:
         self.steer_angle = self._lerp(self.steer_angle, target_steer,
                                       dt * (8.0 if not handbrake else 12.0))
 
-        grip = 0.92 if self.on_track else 0.47
+        grip = (0.92 if self.on_track else 0.47) * self.GRIP_MULTIPLIER
         if handbrake:
             grip *= 0.46
         self.yaw_rate = (self.speed / self.WHEELBASE_M) * math.tan(self.steer_angle)
@@ -157,7 +166,7 @@ class VehiclePhysics:
 
     def reset(self, x: float = 0.0, y: float = -148.0,
               heading: float = -math.pi / 2) -> None:
-        self.__init__(x=x, y=y, heading=heading)
+        self.__init__(x=x, y=y, heading=heading, car_id=self.car_id)
 
     @property
     def speed_kmh(self) -> float:
