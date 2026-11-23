@@ -10,7 +10,7 @@
 - Three AI opponents for career and quick races.
 - Chase camera, speedometer, tachometer, automatic six-speed gearbox, lap counter, timer and best lap.
 - Vehicle model with an engine torque curve, gears, braking, reverse, speed-dependent steering, lateral slip, handbrake, drag and off-track penalties.
-- Main menu, pause, restart, three-lap event, career rewards, local save profile, credits and win-based vehicle unlock data.
+- Main menu, pause, restart, three-lap event, career rewards, local save profile, credits and four garage vehicles with unlockable handling presets.
 - Selectable paint colours and low/medium/high graphics presets.
 
 ### Offline
