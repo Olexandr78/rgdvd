@@ -14,6 +14,7 @@ DEFAULTS: dict[str, Any] = {
     "room": "OPEN-LOBBY",
     "server_url": "wss://rgdvd-online.onrender.com",
     "quality": "medium",
+    "car_id": "street_gt",
     "shadows": True,
     "vsync": True,
     "width": 1366,
