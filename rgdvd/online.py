@@ -60,6 +60,9 @@ class OnlineSession:
             return
         if packet.get("type") == "welcome":
             self.player_id = str(packet.get("id", ""))
+        elif packet.get("type") == "error":
+            self.error = str(packet.get("message", "Online server rejected the connection"))
+            self.connected = False
         elif packet.get("type") in ("players", "state"):
             players = packet.get("players", [])
             if isinstance(players, list):
