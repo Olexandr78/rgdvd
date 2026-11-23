@@ -4,14 +4,14 @@ cd /d "%~dp0"
 
 python --version
 if errorlevel 1 (
-    echo Python was not found. Install Python 3.10 or newer first.
+    echo Python 3.10+ was not found. Install it first.
     pause
     exit /b 1
 )
 
-python -c "import panda3d" >nul 2>nul
+python -c "import panda3d, websocket" >nul 2>nul
 if errorlevel 1 (
-    echo Panda3D is missing. Installing the game dependency...
+    echo Installing RGDVD dependencies...
     python -m pip install -r requirements.txt
     if errorlevel 1 (
         echo Dependency installation failed.
