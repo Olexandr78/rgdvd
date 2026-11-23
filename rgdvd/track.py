@@ -78,7 +78,7 @@ class RacingCircuit:
         road = mesh(self.root, "continuous-asphalt-surface", vertices,
                     triangles, (0.84, 0.86, 0.89, 1), uvs=uvs, normals=normals)
         road.setTexture(self._asphalt_texture(), 1)
-        road.setTexScale(1, 1.0, 1.0)
+        # UVs are already repeated in the mesh; no additional texture scale is needed.
         material = Material("aged-asphalt")
         material.setShininess(8)
         material.setSpecular(Vec4(0.08, 0.08, 0.09, 1))
