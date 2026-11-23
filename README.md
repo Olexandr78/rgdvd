@@ -1,62 +1,66 @@
 # RGDVD
 
-A Python 3D racing game designed for offline play, LAN multiplayer, and online racing.
+**RGDVD** is a Python 3D racing-game project. The current playable build is an offline circuit-driving prototype with AI rivals; it is the foundation for later LAN and internet multiplayer.
 
-## Current build: first playable prototype
+## Current build — 0.2.0
 
-The repository now contains a small procedural 3D driving prototype:
-- A closed oval circuit with asphalt, center markings, and scenery.
-- A player car with a chase camera.
-- Acceleration, braking, reverse, steering, and handbrake.
-- A speedometer HUD.
-- No internet connection required.
+This build replaces the first box-only placeholder with a more substantial prototype:
 
-The car and scenery are temporary procedural models. They are not the final realistic vehicle assets.
+- Procedural GT-style sports car with body panels, cabin glass, alloy wheels, brake discs, lights, wing and exhausts.
+- Closed oval circuit with textured asphalt, painted kerbs, road markings, concrete barriers, a pit building, grandstand, lighting masts and surrounding scenery.
+- Three AI rivals that follow the circuit racing line.
+- Chase camera with speed-sensitive distance and field of view.
+- A dependency-free vehicle model with torque curve, automatic gears, braking/reverse, speed-sensitive steering, handbrake slip, drag and off-track penalties.
+- Menu, pause/restart controls, speed/RPM/gear display, lap timer and best-lap tracking.
+- Procedural environment materials: no large external art packs are required for this prototype.
 
-## Run it
+**Important:** the car and circuit are procedural prototype assets, not scanned or photorealistic production assets. The handling is a tunable approximation, not a tyre-by-tyre simulator. This is a playable foundation, not a finished AAA game.
 
-Requires Python 3.10+.
+## Requirements
 
-```bash
+- Windows 10/11 or Linux
+- Python 3.10 or newer
+- Panda3D 1.10.x
+- A GPU with working OpenGL drivers
+
+## Run
+
+\`\`\`powershell
 python -m pip install -r requirements.txt
 python main.py
-```
+\`\`\`
 
-### Controls
+## Controls
 
 | Key | Action |
 |---|---|
-| W / Up | Accelerate |
-| S / Down | Brake / reverse |
-| A,D / Left,Right | Steer |
-| Space | Handbrake |
-| R | Reset car |
-| Esc | Quit |
+| \`W\` / \`↑\` | Throttle |
+| \`S\` / \`↓\` | Brake; reverse after stopping |
+| \`A\` / \`←\` | Steer left |
+| \`D\` / \`→\` | Steer right |
+| \`Space\` | Handbrake |
+| \`R\` | Restart race |
+| \`Esc\` | Pause / resume |
 
-## Project goals
+## Repository layout
 
-- Realistic vehicle models, materials, lighting, and environments.
-- Offline single-player mode with AI opponents.
-- LAN multiplayer without internet access.
-- Online multiplayer through a dedicated server (Render is the initial hosting target).
-- A complete offline installer designed to fit on one 4.7 GB DVD-R.
-- Target memory budget: up to 4 GB RAM.
+\`\`\`text
+main.py                 Panda3D application, menu, HUD and camera
+rgdvd/physics.py        Standalone vehicle dynamics model
+rgdvd/geometry.py       Procedural mesh helpers and car body mesh
+rgdvd/vehicle.py        Procedural sports-car assembly
+rgdvd/track.py          Circuit, pit lane, barriers and scenery
+rgdvd/ai.py             Racing-line AI opponent
+tests/test_physics.py   Dependency-free physics tests
+\`\`\`
 
-## Planned technology
+## Development roadmap
 
-- Python 3 and Panda3D for the game runtime and 3D rendering.
-- Bullet Physics for more advanced vehicle and collision simulation.
-- UDP for low-latency LAN gameplay.
-- A server-side networking layer for online sessions.
+1. Improve the car model, track surfaces, lighting and driving feel.
+2. Add collision geometry, suspension and tire/grip tuning.
+3. Add AI race rules, multiple cars and race classification.
+4. Add LAN discovery and authoritative LAN race sessions.
+5. Add online matchmaking/server support (Render is a candidate host, not a requirement for offline/LAN play).
+6. Build and measure a complete offline DVD image; target a 4.7 GB DVD-R and a 4 GB RAM budget.
 
-## Development status
-
-This is an early playable prototype, not a finished racing game. Vehicle physics, proper 3D art, AI, multiplayer, menus, and the DVD build pipeline remain to be implemented and tested.
-
-## Design principles
-
-1. Offline play must never depend on the online service.
-2. LAN multiplayer must work without internet access.
-3. Online services must not be required to launch the game.
-4. Large environments should stream assets as needed to control memory use.
-5. The DVD build must include everything required for offline play.
+Offline play must remain usable without an internet connection. LAN multiplayer must not require the online service. The DVD build will need to contain all files required for offline play.
