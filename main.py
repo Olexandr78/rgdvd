@@ -234,7 +234,7 @@ class RGDVDGame(ShowBase):
     def _save_menu_settings(self) -> None:
         self.config["nickname"] = self._nickname()
         self.config["room"] = self._room()
-        self.config["server_url"] = self.server_entry.get().strip()
+        self.config["server_url"] = self.server_entry.get().strip() or "wss://rgdvd-online.onrender.com"
         self.config["car_id"] = self.car_id
         save_config(self.config)
 
@@ -356,7 +356,7 @@ class RGDVDGame(ShowBase):
             self.scene_root.removeNode()
         self.scene_root = self.render.attachNewNode("race-scene")
         self._setup_lighting()
-        self.track = RacingCircuit(self.scene_root)
+        self.track = RacingCircuit(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
         self.physics = VehiclePhysics(car_id=self.car_id)
         paint = get_car_spec(self.car_id)["paint"]
         self.car = SportsCar(self.scene_root, paint=paint)
@@ -546,6 +546,8 @@ class RGDVDGame(ShowBase):
             network_line = f"\nONLINE PLAYERS  {remote_count + 1}"
             if isinstance(self.network_session, OnlineSession) and not self.network_session.connected:
                 network_line = "\nONLINE CONNECTING..."
+        if self.network_error:
+            network_line += f"\n{self.network_error[:48]}"
         self.hud_text.setText(
             f"RGDVD  /  {self.mode}\n"
             f"{p.speed_kmh:06.1f} km/h\n"
