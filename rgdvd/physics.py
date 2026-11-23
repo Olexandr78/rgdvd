@@ -31,9 +31,10 @@ class VehiclePhysics:
     def __init__(self, x: float = 0.0, y: float = -148.0,
                  heading: float = -math.pi / 2,
                  car_id: str = "street_gt") -> None:
-        from .cars import get_car_spec
-        spec = get_car_spec(car_id)
-        self.car_id = car_id if car_id in __import__("rgdvd.cars", fromlist=["CAR_SPECS"]).CAR_SPECS else "street_gt"
+        from .cars import CAR_SPECS, get_car_spec
+        valid_car_id = car_id if car_id in CAR_SPECS else "street_gt"
+        spec = get_car_spec(valid_car_id)
+        self.car_id = valid_car_id
         self.MASS_KG = float(spec["mass_kg"])
         self.MAX_FORWARD_MPS = float(spec["max_speed_mps"])
         self.TORQUE_MULTIPLIER = float(spec["torque_multiplier"])
