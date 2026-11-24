@@ -9,6 +9,13 @@ class VehicleGarageTests(unittest.TestCase):
         self.assertIn("street_gt", unlocked_cars(["street_gt"]))
         self.assertEqual(CAR_SPECS["street_gt"]["required_wins"], 0)
 
+    def test_volga_is_a_starter_car_with_classic_sedan_performance(self):
+        self.assertEqual(CAR_SPECS["volga_2410"]["name"], "Volga GAZ-24-10")
+        volga = VehiclePhysics(car_id="volga_2410")
+        street = VehiclePhysics(car_id="street_gt")
+        self.assertLess(volga.MAX_FORWARD_MPS, street.MAX_FORWARD_MPS)
+        self.assertLess(volga.GRIP_MULTIPLIER, street.GRIP_MULTIPLIER)
+
     def test_locked_cars_do_not_appear_in_garage(self):
         self.assertEqual(unlocked_cars(["street_gt"]), ["street_gt"])
 
