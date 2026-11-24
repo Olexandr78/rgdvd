@@ -55,6 +55,23 @@ class VehiclePhysicsTests(unittest.TestCase):
             car.update(Controls(throttle=0.2, steer=0.8, handbrake=True), 1 / 60)
         self.assertGreater(abs(car.lateral_speed), 1.0)
 
+    def test_manual_transmission_does_not_auto_shift(self):
+        car = VehiclePhysics()
+        car.set_transmission_mode("manual")
+        for _ in range(60 * 10):
+            car.update(Controls(throttle=1.0), 1 / 60)
+        self.assertEqual(car.gear, 1)
+        car.shift_up()
+        self.assertEqual(car.gear, 2)
+        car.shift_down()
+        self.assertEqual(car.gear, 1)
+
+    def test_automatic_transmission_still_shifts(self):
+        car = VehiclePhysics()
+        for _ in range(60 * 10):
+            car.update(Controls(throttle=1.0), 1 / 60)
+        self.assertGreaterEqual(car.gear, 3)
+
     def test_reset_restores_start_state(self):
         car = VehiclePhysics()
         for _ in range(60 * 3):
