@@ -656,7 +656,12 @@ class RGDVDGame(ShowBase):
         self.event_laps = event.laps
         self.animated_arrows = []
         for index, point in enumerate(self.event_targets):
-            following = route[(index + 2) % len(route)]
+            if index + 2 < len(route):
+                following = route[index + 2]
+            else:
+                previous = route[index]
+                following = (point[0] + point[0] - previous[0],
+                             point[1] + point[1] - previous[1])
             self._make_route_gate(point, following[0], following[1])
         dx = route[1][0] - route[0][0]
         dy = route[1][1] - route[0][1]
