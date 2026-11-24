@@ -102,6 +102,16 @@ class UrbanCity:
                 for side in (-1, 1):
                     add_rect(stop_v, stop_t, cx + side * 9.5, cy - 19.0, 0.22, 8.0)
 
+        if lane_v:
+            mesh(self.root, "all-lane-markings", lane_v, lane_t,
+                 (0.78, 0.76, 0.66, 1))
+        if cross_v:
+            mesh(self.root, "all-crosswalk-markings", cross_v, cross_t,
+                 (0.82, 0.82, 0.77, 1))
+        if stop_v:
+            mesh(self.root, "all-stop-lines", stop_v, stop_t,
+                 (0.88, 0.86, 0.78, 1))
+
     def _building_windows(self, x: float, y: float, width: float,
                           depth: float, floors: int, floor_height: float,
                           facade_color: tuple[float, float, float, float]) -> None:
