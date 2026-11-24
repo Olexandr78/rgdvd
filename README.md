@@ -28,7 +28,7 @@ Windows Firewall may ask permission for private-network UDP traffic. Allow RGDVD
 - The client connects to a room using WebSockets.
 - Room codes let friends join the same session.
 - The included FastAPI server relays player states and is designed for deployment to Render using render.yaml.
-- The default client address is wss://rgdvd-online.onrender.com. This hostname becomes usable after the Render blueprint has been deployed.
+- The default client address is https://rgdvd.onrender.com. The default URL is https://rgdvd.onrender.com; the client automatically upgrades it to WSS for online rooms.
 
 **Online server deployment:** sign in to Render, create a new Blueprint from this GitHub repository, and deploy render.yaml. The server currently keeps rooms in memory; rooms disappear when the service restarts. It relays client positions and is not yet an authoritative anti-cheat physics server. Do not use it for ranked competition or trust client-reported race results.
 
