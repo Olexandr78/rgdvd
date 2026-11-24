@@ -14,7 +14,7 @@
 - Selectable paint colours and low/medium/high graphics presets.
 
 ### Offline
-Career and quick races run without an internet connection. Career data is saved locally under the user's application-data folder. Offline mode does not require the Render server.
+City free roam and street driving run without an internet connection. Local settings and garage progress are saved under the user's application-data folder. Offline mode does not require the Render server.
 
 ### LAN multiplayer
 - Host a race from the main menu.
