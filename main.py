@@ -14,14 +14,13 @@ from panda3d.core import (
 )
 
 from rgdvd import __version__
-from rgdvd.ai import AIDriver
 from rgdvd.cars import CAR_SPECS, get_car_spec, unlocked_cars
 from rgdvd.config import DEFAULT_SERVER_URL, load_config, save_config
 from rgdvd.network import LanSession
 from rgdvd.online import OnlineSession
 from rgdvd.physics import Controls, VehiclePhysics
 from rgdvd.profile import CareerProfile
-from rgdvd.track import RacingCircuit
+from rgdvd.city import UrbanCity
 from rgdvd.vehicle import SportsCar
 
 
@@ -56,7 +55,7 @@ class RGDVDGame(ShowBase):
         self.mode = "QUICK"
         self.scene_root = None
         self.car: SportsCar | None = None
-        self.track: RacingCircuit | None = None
+        self.track: UrbanCity | None = None
         self.physics: VehiclePhysics | None = None
         self.ai_drivers: list[AIDriver] = []
         self.remote_cars: dict[str, SportsCar] = {}
@@ -453,25 +452,15 @@ class RGDVDGame(ShowBase):
             self.scene_root.removeNode()
         self.scene_root = self.render.attachNewNode("race-scene")
         self._setup_lighting()
-        self.track = RacingCircuit(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
-        self.physics = VehiclePhysics(car_id=self.car_id)
+        self.track = UrbanCity(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
+        self.physics = VehiclePhysics(x=0.0, y=-120.0, heading=0.0, car_id=self.car_id)
         paint = get_car_spec(self.car_id)["paint"]
         self.car = SportsCar(self.scene_root, paint=paint)
+        # Open-world street driving: no circuit racing line or lap AI.
         self.ai_drivers = []
         self.remote_cars = {}
-        if self.mode in ("CAREER", "QUICK"):
-            opponent_paints = (
-                (0.025, 0.17, 0.66, 1.0),
-                (0.88, 0.55, 0.025, 1.0),
-                (0.62, 0.66, 0.68, 1.0),
-            )
-            for index, opponent_paint in enumerate(opponent_paints, start=1):
-                self.ai_drivers.append(AIDriver(
-                    self.scene_root, self.track,
-                    -math.pi / 2 + index * 0.72, opponent_paint, f"AI-{index}"
-                ))
-        self.camera.setPos(0, -163, 8)
-        self.camera.lookAt(0, -148, 1)
+        self.camera.setPos(0, -139, 7)
+        self.camera.lookAt(0, -120, 1)
 
     def start_race(self, mode: str = "QUICK") -> None:
         self.mode = mode
@@ -493,7 +482,7 @@ class RGDVDGame(ShowBase):
     def restart_race(self) -> None:
         if self.physics is None or self.car is None:
             return
-        self.physics.reset()
+        self.physics.reset(x=0.0, y=-120.0, heading=0.0)
         self.car.reset_pose()
         for driver in self.ai_drivers:
             driver.reset()
@@ -546,13 +535,7 @@ class RGDVDGame(ShowBase):
             self.car.update(self.physics.x, self.physics.y, self.physics.heading,
                             self.physics.speed, self.physics.steer_angle, dt)
 
-            for driver in self.ai_drivers:
-                driver.physics.on_track = self.track.contains(
-                    driver.physics.x, driver.physics.y)
-                driver.update(dt)
-
             self._update_network(dt)
-            self._update_laps()
             self.race_time += dt
             self._update_hud()
         return task.cont
@@ -638,8 +621,7 @@ class RGDVDGame(ShowBase):
     def _update_hud(self) -> None:
         assert self.physics is not None
         p = self.physics
-        offroad = "  |  OFF TRACK" if not p.on_track else ""
-        best = self._format_time(self.best_lap) if self.best_lap is not None else "--:--.--"
+        offroad = "  |  OFF ROAD" if not p.on_track else ""
         remote_count = len(self.remote_cars)
         network_line = ""
         if self.mode.startswith("LAN"):
@@ -654,9 +636,9 @@ class RGDVDGame(ShowBase):
             f"RGDVD  /  {self.mode}\n"
             f"{p.speed_kmh:06.1f} km/h\n"
             f"GEAR  {p.gear}     RPM  {int(p.rpm):04d}\n"
-            f"LAP   {min(self.lap, 3):02d} / 03\n"
-            f"TIME  {self._format_time(self.race_time)}\n"
-            f"BEST  {best}{network_line}{offroad}"
+            f"DIST  {p.distance_m / 1000.0:07.2f} km\n"
+            f"FREE ROAM  /  {self._format_time(self.race_time)}"
+            f"{network_line}{offroad}"
         )
         self.hud_bottom.setText(
             "W/↑ THROTTLE   S/↓ BRAKE   A/D STEER   SPACE HANDBRAKE   R RESET   ESC PAUSE"
