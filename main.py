@@ -411,7 +411,7 @@ class RGDVDGame(ShowBase):
         if self.state not in ("MENU", "RACING") or self.map_screen is None:
             return
         self.map_origin = self.state
-        if self.state == "MENU":
+        if self.map_origin == "MENU":
             self.menu.hide()
             x, y = 0.0, -120.0
         else:
@@ -419,9 +419,9 @@ class RGDVDGame(ShowBase):
             y = self.physics.y if self.physics else -120.0
             self.hud_text.hide()
             self.hud_bottom.hide()
-            self.state = "MAP"
             if self.audio:
                 self.audio.stop()
+        self.state = "MAP"
         self.map_screen.show(x, y)
 
     def close_world_map(self) -> None:
