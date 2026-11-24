@@ -13,7 +13,8 @@
 - Six-speed automatic or manual gearbox selectable from the main menu; Q/E shift gears, F7 switches modes while driving, and configurable wheel buttons can act as shift paddles.
 - Chase camera, speedometer, tachometer, race timer and event progress HUD.
 - Vehicle model with an engine torque curve, gears, braking, reverse, speed-dependent steering, lateral slip, handbrake, drag and off-track penalties.
-- Night-racing themed main menu, pause, restart, local save profile, credits and five garage vehicles, including a drivable procedural Volga GAZ-24-10.
+- CustomTkinter desktop launcher with separate Home, Garage, Events, Multiplayer, Controls and Settings pages; Panda3D starts only after launching a drive or event.
+- In-game pause, restart, local save profile, credits and five garage vehicles, including a drivable procedural Volga GAZ-24-10.
 - Runtime-generated engine, tyre-slip and gear-change audio; no external sound packs are required.
 - Selectable paint colours and low/medium/high graphics presets.
 
@@ -40,7 +41,8 @@ Windows Firewall may ask permission for private-network UDP traffic. Allow RGDVD
 
 - Windows 10/11 or Linux
 - Python 3.10+
-- Panda3D 1.10.x
+- CustomTkinter 5.2+ for the desktop launcher
+- Panda3D 1.10.x (loaded only by the separate game process)
 - Online play additionally uses websocket-client
 
 Install and launch:
@@ -84,7 +86,8 @@ The design target is **up to 4 GB system RAM**, using small procedural textures 
 ## Project layout
 
 ~~~text
-main.py                  Panda3D client, menus, free-roam loop, HUD and camera
+main.py                  CustomTkinter launcher and menu pages
+rgdvd_game.py            Panda3D game runtime, loaded only after Play
 rgdvd/city.py            Open-world urban environment
 rgdvd/events.py          53 original circuit and sprint routes
 rgdvd/map_screen.py      Overhead map and event selection
