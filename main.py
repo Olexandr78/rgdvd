@@ -57,7 +57,7 @@ class RGDVDGame(ShowBase):
         self.car: SportsCar | None = None
         self.track: UrbanCity | None = None
         self.physics: VehiclePhysics | None = None
-        self.ai_drivers: list[AIDriver] = []
+        self.ai_drivers = []
         self.remote_cars: dict[str, SportsCar] = {}
         self.network_session: LanSession | OnlineSession | None = None
         self.network_error: str | None = None
@@ -141,7 +141,7 @@ class RGDVDGame(ShowBase):
                           width=0.59)
         DirectLabel(
             parent=self.menu,
-            text="3-LAP EVENTS     /     AI RIVALS     /     LOCAL SAVES",
+            text="OPEN CITY     /     STREET DRIVING     /     LOCAL SAVES",
             text_scale=0.025, text_fg=(0.53, 0.62, 0.69, 1),
             frameColor=(0, 0, 0, 0), pos=(-0.76, 0, -0.265),
         )
