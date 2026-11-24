@@ -40,6 +40,7 @@ class WorldMapScreen:
             frameSize=(0.57, 1.64, -0.83, 0.68), pos=(0, 0, -0.04),
         )
         self._draw_roads()
+        self.route_path: NodePath | None = None
         self.markers: dict[str, DirectButton] = {}
         for event in EVENTS:
             x, y = self._map_point(*event.start)
@@ -148,6 +149,22 @@ class WorldMapScreen:
             marker["text_scale"] = 0.040 if key == event_id else 0.030
         self.event_title["text"] = event.name
         self.event_type["text"] = event.event_type
+        if self.route_path is not None:
+            self.route_path.removeNode()
+            self.route_path = None
+        route_lines = LineSegs("selected-event-route")
+        route_lines.setThickness(4.5)
+        route_lines.setColor(0.04, 0.72, 1.0, 0.95)
+        first_x, first_y = self._map_point(*event.route[0])
+        route_lines.moveTo(first_x, -0.01, first_y)
+        for route_x, route_y in event.route[1:]:
+            px, pz = self._map_point(route_x, route_y)
+            route_lines.drawTo(px, -0.01, pz)
+        if event.event_type == "CIRCUIT":
+            route_lines.drawTo(first_x, -0.01, first_y)
+        self.route_path = self.root.attachNewNode(route_lines.create())
+        self.route_path.setDepthTest(False)
+        self.route_path.setDepthWrite(False)
         length = sum(
             ((event.route[i][0] - event.route[i - 1][0]) ** 2 +
              (event.route[i][1] - event.route[i - 1][1]) ** 2) ** 0.5
