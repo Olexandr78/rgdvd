@@ -54,6 +54,7 @@ class RGDVDGame(ShowBase):
         self.state = "MENU"
         self.mode = "QUICK"
         self.scene_root = None
+        self.light_nodes = []
         self.car: SportsCar | None = None
         self.track: UrbanCity | None = None
         self.physics: VehiclePhysics | None = None
@@ -424,22 +425,33 @@ class RGDVDGame(ShowBase):
         except (RuntimeError, ValueError) as exc:
             self._refresh_menu(str(exc))
 
+    def _clear_lighting(self) -> None:
+        for light_node in self.light_nodes:
+            self.render.clearLight(light_node)
+            light_node.removeNode()
+        self.light_nodes.clear()
+        self.render.clearFog()
+
     def _setup_lighting(self) -> None:
+        self._clear_lighting()
         ambient = AmbientLight("soft-sky-ambient")
         quality = str(self.config.get("quality", "medium")).lower()
         ambient.setColor(Vec4(0.52 if quality == "low" else 0.43,
                               0.55 if quality == "low" else 0.47,
                               0.60 if quality == "low" else 0.53, 1))
-        self.render.setLight(self.render.attachNewNode(ambient))
+        ambient_node = self.scene_root.attachNewNode(ambient)
+        self.render.setLight(ambient_node)
+        self.light_nodes.append(ambient_node)
 
         sun = DirectionalLight("late-afternoon-sun")
         sun.setColor(Vec4(1.0, 0.91, 0.77, 1))
         if self.config.get("shadows", True) and quality != "low":
             sun.setShadowCaster(True, 1024 if quality == "medium" else 2048,
                                 1024 if quality == "medium" else 2048)
-        sun_np = self.render.attachNewNode(sun)
+        sun_np = self.scene_root.attachNewNode(sun)
         sun_np.setHpr(-32, -48, 0)
         self.render.setLight(sun_np)
+        self.light_nodes.append(sun_np)
         self.render.setShaderAuto()
 
         fog = Fog("distance-haze")
@@ -449,6 +461,7 @@ class RGDVDGame(ShowBase):
 
     def _build_scene(self) -> None:
         if self.scene_root is not None:
+            self._clear_lighting()
             self.scene_root.removeNode()
         self.scene_root = self.render.attachNewNode("race-scene")
         self._setup_lighting()
@@ -456,6 +469,7 @@ class RGDVDGame(ShowBase):
         self.physics = VehiclePhysics(x=0.0, y=-120.0, heading=0.0, car_id=self.car_id)
         paint = get_car_spec(self.car_id)["paint"]
         self.car = SportsCar(self.scene_root, paint=paint)
+        self.car.reset_pose(self.physics.x, self.physics.y, self.physics.heading)
         # Open-world street driving: no circuit racing line or lap AI.
         self.ai_drivers = []
         self.remote_cars = {}
@@ -483,7 +497,7 @@ class RGDVDGame(ShowBase):
         if self.physics is None or self.car is None:
             return
         self.physics.reset(x=0.0, y=-120.0, heading=0.0)
-        self.car.reset_pose()
+        self.car.reset_pose(self.physics.x, self.physics.y, self.physics.heading)
         for driver in self.ai_drivers:
             driver.reset()
         self.race_time = 0.0
@@ -512,6 +526,7 @@ class RGDVDGame(ShowBase):
         self.state = "MENU"
         self._close_network()
         if self.scene_root is not None:
+            self._clear_lighting()
             self.scene_root.removeNode()
             self.scene_root = None
         self.pause_menu.hide()
@@ -561,8 +576,8 @@ class RGDVDGame(ShowBase):
             if car is not None:
                 try:
                     car.update(float(state.get("x", 0)),
-                               float(state.get("y", -148)),
-                               float(state.get("heading", -1.5708)),
+                               float(state.get("y", -120)),
+                               float(state.get("heading", 0.0)),
                                float(state.get("speed", 0)), 0.0, dt)
                 except (TypeError, ValueError):
                     pass
