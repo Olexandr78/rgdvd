@@ -150,9 +150,10 @@ class SportsCar:
         for wheel in self.front_wheel_pivots:
             wheel.setH(steer_angle * 57.2957795131)
 
-    def reset_pose(self) -> None:
-        self.root.setPos(0, -148, 0.03)
-        self.root.setH(-90)
+    def reset_pose(self, x: float = 0.0, y: float = -120.0,
+                   heading: float = 0.0) -> None:
+        self.root.setPos(x, y, 0.03)
+        self.root.setH(heading * 57.2957795131)
         for wheel in self.wheels:
             wheel.setP(0)
             wheel.setH(0)
