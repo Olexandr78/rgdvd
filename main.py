@@ -302,10 +302,18 @@ class RGDVDLauncher(ctk.CTk):
         if not GAME_FILE.exists():
             self.sidebar_status.configure(text="ОШИБКА: НЕТ RGDVD_GAME.PY", text_color="#ff746b")
             return
-        args = [sys.executable, str(GAME_FILE), "--mode", mode,
-                "--nickname", str(self.config_data.get("nickname", "Driver")),
-                "--room", str(self.config_data.get("room", "OPEN-LOBBY")),
-                "--server", str(self.config_data.get("server_url", DEFAULT_SERVER_URL))]
+        if getattr(sys, "frozen", False):
+            game_executable = ROOT / "RGDVDGame.exe"
+            if not game_executable.exists():
+                self.sidebar_status.configure(text="НЕТ RGDVDGAME.EXE", text_color="#ff746b")
+                return
+            args = [str(game_executable)]
+        else:
+            args = [sys.executable, str(GAME_FILE)]
+        args += ["--mode", mode,
+                 "--nickname", str(self.config_data.get("nickname", "Driver")),
+                 "--room", str(self.config_data.get("room", "OPEN-LOBBY")),
+                 "--server", str(self.config_data.get("server_url", DEFAULT_SERVER_URL))]
         if event_id:
             args += ["--event-id", event_id]
         try:
