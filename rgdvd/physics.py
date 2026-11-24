@@ -28,8 +28,8 @@ class VehiclePhysics:
     MAX_FORWARD_MPS = 78.0
     MAX_REVERSE_MPS = 11.0
 
-    def __init__(self, x: float = 0.0, y: float = -148.0,
-                 heading: float = -math.pi / 2,
+    def __init__(self, x: float = 0.0, y: float = -120.0,
+                 heading: float = 0.0,
                  car_id: str = "street_gt") -> None:
         from .cars import CAR_SPECS, get_car_spec
         valid_car_id = car_id if car_id in CAR_SPECS else "street_gt"
@@ -165,8 +165,8 @@ class VehiclePhysics:
         self.distance_m += math.hypot(dx, dy)
         self._shift_if_needed()
 
-    def reset(self, x: float = 0.0, y: float = -148.0,
-              heading: float = -math.pi / 2) -> None:
+    def reset(self, x: float = 0.0, y: float = -120.0,
+              heading: float = 0.0) -> None:
         self.__init__(x=x, y=y, heading=heading, car_id=self.car_id)
 
     @property
