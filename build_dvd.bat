@@ -23,12 +23,27 @@ if exist dist\RGDVD rmdir /s /q dist\RGDVD
 
 python -m PyInstaller --noconfirm --clean --onedir --console ^
   --name RGDVD ^
-  --collect-all panda3d ^
-  --collect-all direct ^
+  --collect-all customtkinter ^
   --hidden-import websocket ^
   --add-data "rgdvd;rgdvd" ^
   main.py
 if errorlevel 1 goto :failed
+
+python -m PyInstaller --noconfirm --clean --onefile --console ^
+  --name RGDVDGame ^
+  --distpath dist\game_runtime ^
+  --workpath build\game_runtime ^
+  --specpath build\game_runtime ^
+  --collect-all panda3d ^
+  --collect-all direct ^
+  --hidden-import websocket ^
+  --add-data "rgdvd;rgdvd" ^
+  rgdvd_game.py
+if errorlevel 1 goto :failed
+
+copy /y dist\game_runtime\RGDVDGame.exe dist\RGDVD\RGDVDGame.exe >nul
+if errorlevel 1 goto :failed
+rmdir /s /q dist\game_runtime
 
 copy /y README.md dist\RGDVD\README.md >nul
 if errorlevel 1 goto :failed
