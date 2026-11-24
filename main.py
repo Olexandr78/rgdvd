@@ -45,6 +45,7 @@ class RGDVDGame(ShowBase):
         self.audio: VehicleAudio | None = None
         try:
             self.audio = VehicleAudio(self.loader, APP_DIR)
+            self.audio.stop()
         except Exception:
             self.audio = None
         self.car_id = str(self.config.get("car_id", "street_gt"))
@@ -765,20 +766,22 @@ class RGDVDGame(ShowBase):
 
     def _finish_race(self) -> None:
         self.state = "RESULTS"
-        payout_text = "Online/LAN result - career rewards not applied."
-        if self.mode == "CAREER" and self.physics is not None:
+        if self.audio:
+            self.audio.stop()
+        payout_text = "Free drive complete."
+        if self.mode in ("CAREER", "EVENT") and self.physics is not None:
             result = self.profile.record_race(
                 self.race_time, self.physics.distance_m / 1000.0, 1,
                 self.best_lap,
             )
             unlocked = (", unlocked: " + ", ".join(result["unlocked"])
                         if result["unlocked"] else "")
-            payout_text = (f"Career reward: +{result['payout']:,} credits"
+            payout_text = (f"Event reward: +{result['payout']:,} credits"
                            f"{unlocked}\nWallet: {self.profile.credits:,}")
         self.result_label["text"] = "RACE COMPLETE"
         best = self._format_time(self.best_lap) if self.best_lap else "--:--.--"
         self.result_details["text"] = (
-            f"Mode: {self.mode}\n"
+            f"Event: {self.current_event.name if self.current_event else self.mode}\n"
             f"Time: {self._format_time(self.race_time)}\n"
             f"Best lap: {best}\n{payout_text}"
         )
@@ -810,13 +813,19 @@ class RGDVDGame(ShowBase):
                 network_line = "\nONLINE CONNECTING..."
         if self.network_error:
             network_line += f"\n{self.network_error[:48]}"
+        if self.current_event is not None:
+            event_line = (f"{self.current_event.name}\n"
+                          f"CHECKPOINT  {self.event_target_index + 1}/"
+                          f"{len(self.event_targets)}   LAP {self.event_lap}/"
+                          f"{self.event_laps}")
+        else:
+            event_line = f"FREE ROAM  /  {self._format_time(self.race_time)}"
         self.hud_text.setText(
             f"RGDVD  /  {self.mode}\n"
             f"{p.speed_kmh:06.1f} km/h\n"
             f"GEAR  {p.gear}     RPM  {int(p.rpm):04d}\n"
             f"DIST  {p.distance_m / 1000.0:07.2f} km\n"
-            f"FREE ROAM  /  {self._format_time(self.race_time)}"
-            f"{network_line}{offroad}"
+            f"{event_line}{network_line}{offroad}"
         )
         self.hud_bottom.setText(
             "W/↑ THROTTLE   S/↓ BRAKE   A/D STEER   SPACE HANDBRAKE   R RESET   ESC PAUSE"
