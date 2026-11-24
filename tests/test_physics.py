@@ -33,6 +33,28 @@ class VehiclePhysicsTests(unittest.TestCase):
         self.assertGreater(car.heading, -1.57079632679)
         self.assertNotAlmostEqual(car.y, -120.0)
 
+
+    def test_handbrake_slows_car_without_service_brake(self):
+        handbrake_car = VehiclePhysics()
+        coasting_car = VehiclePhysics()
+        for _ in range(60 * 3):
+            handbrake_car.update(Controls(throttle=1.0), 1 / 60)
+            coasting_car.update(Controls(throttle=1.0), 1 / 60)
+        initial_speed = handbrake_car.speed
+        for _ in range(60):
+            handbrake_car.update(Controls(handbrake=True), 1 / 60)
+            coasting_car.update(Controls(), 1 / 60)
+        self.assertLess(handbrake_car.speed, initial_speed)
+        self.assertLess(handbrake_car.speed, coasting_car.speed)
+
+    def test_handbrake_builds_lateral_slip_while_turning(self):
+        car = VehiclePhysics()
+        for _ in range(60 * 2):
+            car.update(Controls(throttle=1.0), 1 / 60)
+        for _ in range(60):
+            car.update(Controls(throttle=0.2, steer=0.8, handbrake=True), 1 / 60)
+        self.assertGreater(abs(car.lateral_speed), 1.0)
+
     def test_reset_restores_start_state(self):
         car = VehiclePhysics()
         for _ in range(60 * 3):
