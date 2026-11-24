@@ -37,7 +37,7 @@ class LanSession:
         self.connected = role == "host"
         self.closed = False
         self.error: str | None = None
-        self.local_state = {"x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0}
+        self.local_state = {"x": 0.0, "y": -120.0, "heading": 0.0, "speed": 0.0}
         self.players: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
         self._last_snapshot = self._last_send = 0.0
@@ -174,7 +174,7 @@ class LanSession:
                     return
                 self.players[player_id] = {
                     "id": player_id, "name": str(packet.get("name", "Driver"))[:20],
-                    "state": {"x": 0.0, "y": -148.0, "heading": -1.5708, "speed": 0.0},
+                    "state": {"x": 0.0, "y": -120.0, "heading": 0.0, "speed": 0.0},
                     "last_seen": now, "address": address,
                 }
             self.socket.sendto(_encode({
