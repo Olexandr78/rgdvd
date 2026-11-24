@@ -89,6 +89,10 @@ class VehicleAudio:
             self.shift.play()
             self.last_gear = int(gear)
 
+    def start(self) -> None:
+        self.engine.play()
+        self.tyres.play()
+
     def stop(self) -> None:
         for sound in (self.engine, self.tyres, self.shift):
             try:
