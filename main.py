@@ -10,7 +10,7 @@ from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, AntialiasAttrib, DirectionalLight, Fog,
-    TextNode, Vec4, WindowProperties, loadPrcFileData,
+    LineSegs, TextNode, Vec4, WindowProperties, loadPrcFileData,
 )
 
 from rgdvd import __version__
@@ -311,6 +311,100 @@ class RGDVDGame(ShowBase):
             mayChange=True,
         )
         self.hud_bottom.hide()
+        self.gauge_root = self.aspect2d.attachNewNode("dashboard-gauges")
+        self.gauge_needles = {}
+        self.gauge_readouts = {}
+        self._build_dashboard_gauges()
+        self.gauge_root.hide()
+
+    def _build_dashboard_gauges(self) -> None:
+        """Create analog-style speedometer (left) and tachometer (right)."""
+        specs = (
+            ("speed", -0.82, "SPEED", "km/h", 300.0, (0.20, 0.78, 1.0, 1.0)),
+            ("rpm", 0.82, "TACHOMETER", "x1000 rpm", 9000.0, (1.0, 0.25, 0.12, 1.0)),
+        )
+        self.gauge_centers = {}
+        for key, cx, title, unit, maximum, color in specs:
+            cz, radius = -0.53, 0.34
+            self.gauge_centers[key] = (cx, cz, radius, maximum)
+            lines = LineSegs(f"{key}-gauge-face")
+            lines.setThickness(2.2)
+            lines.setColor(0.72, 0.79, 0.84, 0.88)
+            steps = 60
+            for index in range(steps + 1):
+                angle = math.radians(-135.0 + 270.0 * index / steps)
+                x = cx + radius * math.sin(angle)
+                z = cz + radius * math.cos(angle)
+                if index == 0:
+                    lines.moveTo(x, 0, z)
+                else:
+                    lines.drawTo(x, 0, z)
+            for tick in range(11):
+                angle = math.radians(-135.0 + 27.0 * tick)
+                outer = radius * 0.96
+                inner = radius * (0.78 if tick % 2 == 0 else 0.86)
+                lines.moveTo(cx + outer * math.sin(angle), 0,
+                             cz + outer * math.cos(angle))
+                lines.drawTo(cx + inner * math.sin(angle), 0,
+                             cz + inner * math.cos(angle))
+            face = self.gauge_root.attachNewNode(lines.create())
+            face.setTransparency(True)
+
+            needle_lines = LineSegs(f"{key}-needle")
+            needle_lines.setThickness(3.0)
+            needle_lines.setColor(*color)
+            needle_lines.moveTo(0, 0, 0)
+            needle_lines.drawTo(0, 0, radius * 0.72)
+            needle = self.gauge_root.attachNewNode(needle_lines.create())
+            needle.setPos(cx, -0.012, cz)
+            self.gauge_needles[key] = needle
+
+            OnscreenText(text=title, parent=self.gauge_root,
+                         pos=(cx, cz + 0.43), scale=0.035,
+                         fg=(0.91, 0.94, 0.97, 0.96),
+                         align=TextNode.ACenter)
+            self.gauge_readouts[key] = OnscreenText(
+                text="0", parent=self.gauge_root, pos=(cx, cz - 0.015),
+                scale=0.055, fg=(0.98, 0.99, 1.0, 1),
+                align=TextNode.ACenter, mayChange=True)
+            OnscreenText(text=unit, parent=self.gauge_root,
+                         pos=(cx, cz - 0.095), scale=0.020,
+                         fg=(0.65, 0.73, 0.80, 0.95),
+                         align=TextNode.ACenter)
+            for tick in range(0, 11, 2):
+                angle = math.radians(-135.0 + 27.0 * tick)
+                label_radius = radius * 0.66
+                label_value = int(maximum * tick / 10 / (1000 if key == "rpm" else 1))
+                OnscreenText(
+                    text=str(label_value), parent=self.gauge_root,
+                    pos=(cx + label_radius * math.sin(angle),
+                         cz + label_radius * math.cos(angle)),
+                    scale=0.019, fg=(0.76, 0.82, 0.87, 0.95),
+                    align=TextNode.ACenter)
+            if key == "rpm":
+                self.gauge_gear = OnscreenText(
+                    text="GEAR  N", parent=self.gauge_root,
+                    pos=(cx, cz - 0.205), scale=0.032,
+                    fg=(1.0, 0.82, 0.28, 1),
+                    align=TextNode.ACenter, mayChange=True)
+
+    def _update_dashboard_gauges(self) -> None:
+        if self.physics is None:
+            return
+        values = {
+            "speed": max(0.0, self.physics.speed_kmh),
+            "rpm": max(0.0, self.physics.rpm),
+        }
+        for key, value in values.items():
+            _, _, _, maximum = self.gauge_centers[key]
+            fraction = max(0.0, min(1.0, value / maximum))
+            self.gauge_needles[key].setR(-135.0 + 270.0 * fraction)
+            shown = int(round(value))
+            self.gauge_readouts[key].setText(
+                f"{shown:03d}" if key == "speed" else f"{shown:04d}")
+        gear = self.physics.gear
+        gear_text = "R" if gear < 0 else ("N" if gear == 0 else str(gear))
+        self.gauge_gear.setText(f"GEAR  {gear_text}")
 
     def _menu_button(self, text: str, x: float, z: float, command: Any,
                      width: float = 0.59, accent: bool = False,
@@ -451,6 +545,7 @@ class RGDVDGame(ShowBase):
             y = self.physics.y if self.physics else -120.0
             self.hud_text.hide()
             self.hud_bottom.hide()
+            self.gauge_root.hide()
             if self.audio:
                 self.audio.stop()
         self.state = "MAP"
@@ -590,6 +685,7 @@ class RGDVDGame(ShowBase):
         self.result_menu.hide()
         self.hud_text.show()
         self.hud_bottom.show()
+        self.gauge_root.show()
         self.state = "RACING"
         self.network_error = None
         self.race_time = 0.0
@@ -620,6 +716,7 @@ class RGDVDGame(ShowBase):
         self.result_menu.hide()
         self.hud_text.show()
         self.hud_bottom.show()
+        self.gauge_root.show()
 
     def toggle_pause(self) -> None:
         if self.state == "MAP":
@@ -650,6 +747,7 @@ class RGDVDGame(ShowBase):
         self.result_menu.hide()
         self.hud_text.hide()
         self.hud_bottom.hide()
+        self.gauge_root.hide()
         self.menu.show()
         self._refresh_menu()
 
@@ -873,12 +971,11 @@ class RGDVDGame(ShowBase):
         else:
             event_line = f"FREE ROAM  /  {self._format_time(self.race_time)}"
         self.hud_text.setText(
-            f"RGDVD  /  {self.mode}\n"
-            f"{p.speed_kmh:06.1f} km/h\n"
-            f"GEAR  {p.gear}     RPM  {int(p.rpm):04d}\n"
-            f"DIST  {p.distance_m / 1000.0:07.2f} km\n"
+            f"RGDVD  /  {self.mode}\\n"
+            f"DIST  {p.distance_m / 1000.0:07.2f} km\\n"
             f"{event_line}{network_line}{offroad}"
         )
+        self._update_dashboard_gauges()
         self.hud_bottom.setText(
             "W/↑ GAS   S/↓ BRAKE   A/D STEER   SPACE HANDBRAKE   Q/E SHIFT   F7 GEARBOX   R RESET"
         )
