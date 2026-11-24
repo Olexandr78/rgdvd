@@ -299,10 +299,11 @@ class RGDVDLauncher(ctk.CTk):
     def launch_game(self, mode, event_id=""):
         if self.game_process and self.game_process.poll() is None:
             return
-        if not GAME_FILE.exists():
+        frozen = getattr(sys, "frozen", False)
+        if not frozen and not GAME_FILE.exists():
             self.sidebar_status.configure(text="ОШИБКА: НЕТ RGDVD_GAME.PY", text_color="#ff746b")
             return
-        if getattr(sys, "frozen", False):
+        if frozen:
             game_executable = ROOT / "RGDVDGame.exe"
             if not game_executable.exists():
                 self.sidebar_status.configure(text="НЕТ RGDVDGAME.EXE", text_color="#ff746b")
