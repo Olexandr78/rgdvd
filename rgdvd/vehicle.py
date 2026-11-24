@@ -159,13 +159,12 @@ class VolgaCar(SportsCar):
                     (1.78, 1.02, 0.22), body_color)
         self._paint(hood, "Volga-bonnet-paint", 0.22)
         self._paint(trunk, "Volga-trunk-paint", 0.22)
-        cabin = box(self.root, "Volga-cabin", (0, -0.02, 1.68),
-                    (1.62, 2.35, 0.82), body_color)
+        # Open cabin glazing: do not place an opaque cuboid behind the windows.
+        # The roof is supported by separate A/B/C pillars, like a real sedan.
         roof = box(self.root, "Volga-flat-roof", (0, -0.02, 2.12),
-                   (1.55, 1.55, 0.12), body_color)
-        self._paint(cabin, "Volga-cabin-paint", 0.2)
+                   (1.55, 1.62, 0.12), body_color)
         self._paint(roof, "Volga-roof-paint", 0.2)
-        glass_color = (0.10, 0.17, 0.20, 0.86)
+        glass_color = (0.045, 0.095, 0.12, 0.94)
         windows = [
             make_glass(self.root, "Volga-windscreen", [
                 (-0.70, 0.80, 1.60), (0.70, 0.80, 1.60),
@@ -174,6 +173,15 @@ class VolgaCar(SportsCar):
                 (-0.68, -0.48, 2.05), (0.68, -0.48, 2.05),
                 (0.70, -0.83, 1.60), (-0.70, -0.83, 1.60)], glass_color),
         ]
+        # Slim painted pillars frame the glass instead of hiding it.
+        for side in (-1, 1):
+            for y, z0, z1 in ((0.49, 1.58, 2.08), (-0.02, 1.58, 2.08),
+                              (-0.82, 1.58, 2.08)):
+                pillar = box(self.root, "Volga-window-pillar",
+                             (side * (0.73 if z1 > 2 else 0.78), y,
+                              (z0 + z1) / 2),
+                             (0.085, 0.09, z1 - z0), body_color)
+                self._paint(pillar, "Volga-pillar-paint", 0.22)
         for glass in windows:
             glass.setTransparency(TransparencyAttrib.MAlpha)
             glass.setDepthWrite(False)
