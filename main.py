@@ -11,7 +11,8 @@ from rgdvd.cars import CAR_SPECS
 from rgdvd.events import EVENTS
 from rgdvd.profile import CareerProfile
 
-ROOT = Path(__file__).resolve().parent
+ROOT = (Path(sys.executable).resolve().parent if getattr(sys, "frozen", False)
+        else Path(__file__).resolve().parent)
 GAME_FILE = ROOT / "rgdvd_game.py"
 
 ctk.set_appearance_mode("dark")
