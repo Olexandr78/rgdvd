@@ -10,7 +10,7 @@ from .config import APP_DIR
 
 class CareerProfile:
     STARTING_CREDITS = 2500
-    DEFAULT_CARS = ["street_gt"]
+    DEFAULT_CARS = ["street_gt", "volga_2410"]
     CAR_UNLOCKS = {
         "touring_v8": 5,
         "track_special": 12,
