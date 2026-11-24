@@ -9,7 +9,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-python -c "import panda3d, websocket" >nul 2>nul
+python -c "import panda3d, websocket, customtkinter" >nul 2>nul
 if errorlevel 1 (
     echo Installing RGDVD dependencies...
     python -m pip install -r requirements.txt
