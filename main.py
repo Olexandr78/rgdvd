@@ -16,7 +16,7 @@ from panda3d.core import (
 from rgdvd import __version__
 from rgdvd.ai import AIDriver
 from rgdvd.cars import CAR_SPECS, get_car_spec, unlocked_cars
-from rgdvd.config import load_config, save_config
+from rgdvd.config import DEFAULT_SERVER_URL, load_config, save_config
 from rgdvd.network import LanSession
 from rgdvd.online import OnlineSession
 from rgdvd.physics import Controls, VehiclePhysics
@@ -208,7 +208,7 @@ class RGDVDGame(ShowBase):
         )
         self.server_entry = DirectEntry(
             parent=self.menu,
-            initialText=str(self.config.get("server_url", "wss://rgdvd-online.onrender.com")),
+            initialText=str(self.config.get("server_url", DEFAULT_SERVER_URL)),
             numLines=1, width=34, scale=0.031, pos=(0.53, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.86, 0.90, 0.93, 1), cursorKeys=1,
@@ -331,7 +331,7 @@ class RGDVDGame(ShowBase):
     def _save_menu_settings(self) -> None:
         self.config["nickname"] = self._nickname()
         self.config["room"] = self._room()
-        self.config["server_url"] = self.server_entry.get().strip() or "wss://rgdvd-online.onrender.com"
+        self.config["server_url"] = self.server_entry.get().strip() or DEFAULT_SERVER_URL
         self.config["car_id"] = self.car_id
         save_config(self.config)
 
@@ -418,7 +418,7 @@ class RGDVDGame(ShowBase):
         self._save_menu_settings()
         self._close_network()
         try:
-            base_url = str(self.config.get("server_url", "")).strip()
+            base_url = str(self.config.get("server_url", DEFAULT_SERVER_URL)).strip()
             self.network_session = OnlineSession(base_url, self._room(), self._nickname())
             self.start_race("ONLINE")
             self._refresh_hud_status("CONNECTING TO ONLINE ROOM...")
