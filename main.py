@@ -41,7 +41,7 @@ class RGDVDGame(ShowBase):
         super().__init__()
         self.disableMouse()
         self.setBackgroundColor(0.44, 0.61, 0.75, 1)
-        self.config = load_config()
+        self.game_config = load_config()
         self.profile = CareerProfile()
         self.audio: VehicleAudio | None = None
         try:
@@ -49,14 +49,14 @@ class RGDVDGame(ShowBase):
             self.audio.stop()
         except Exception:
             self.audio = None
-        self.car_id = str(self.config.get("car_id", "street_gt"))
+        self.car_id = str(self.game_config.get("car_id", "street_gt"))
         if not self.profile.is_unlocked(self.car_id):
             self.car_id = "street_gt"
         props = WindowProperties()
         props.setTitle(f"RGDVD {__version__} | Racing")
         props.setCursorHidden(False)
-        props.setSize(int(self.config.get("width", 1366)),
-                      int(self.config.get("height", 768)))
+        props.setSize(int(self.game_config.get("width", 1366)),
+                      int(self.game_config.get("height", 768)))
         self.win.requestProperties(props)
         self.camLens.setNearFar(0.1, 1800.0)
         self.camLens.setFov(72)
@@ -91,7 +91,7 @@ class RGDVDGame(ShowBase):
             "w", "s", "a", "d", "arrow_up", "arrow_down",
             "arrow_left", "arrow_right", "space", "q", "e",
         )}
-        self.wheel_input = WheelInput(self, self.config)
+        self.wheel_input = WheelInput(self, self.game_config)
         self._wheel_shift_up_was_pressed = False
         self._wheel_shift_down_was_pressed = False
         self._setup_menu()
@@ -207,7 +207,7 @@ class RGDVDGame(ShowBase):
             text_align=TextNode.ALeft,
         )
         self.nickname_entry = DirectEntry(
-            parent=self.menu, initialText=str(self.config.get("nickname", "Driver")),
+            parent=self.menu, initialText=str(self.game_config.get("nickname", "Driver")),
             numLines=1, width=13, scale=0.040, pos=(-1.40, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
@@ -219,7 +219,7 @@ class RGDVDGame(ShowBase):
             text_align=TextNode.ALeft,
         )
         self.room_entry = DirectEntry(
-            parent=self.menu, initialText=str(self.config.get("room", "OPEN-LOBBY")),
+            parent=self.menu, initialText=str(self.game_config.get("room", "OPEN-LOBBY")),
             numLines=1, width=14, scale=0.040, pos=(-0.43, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
@@ -232,7 +232,7 @@ class RGDVDGame(ShowBase):
         )
         self.server_entry = DirectEntry(
             parent=self.menu,
-            initialText=str(self.config.get("server_url", DEFAULT_SERVER_URL)),
+            initialText=str(self.game_config.get("server_url", DEFAULT_SERVER_URL)),
             numLines=1, width=34, scale=0.031, pos=(0.53, 0, -0.665),
             frameColor=(0.11, 0.145, 0.18, 1),
             text_fg=(0.86, 0.90, 0.93, 1), cursorKeys=1,
@@ -433,10 +433,10 @@ class RGDVDGame(ShowBase):
         wins = self.profile.data.get("wins", 0)
         races = self.profile.data.get("races", 0)
         car_name = get_car_spec(self.car_id)["name"]
-        quality = str(self.config.get("quality", "medium")).upper()
+        quality = str(self.game_config.get("quality", "medium")).upper()
         unlocked_count = len(unlocked_cars(self.profile.data.get("unlocked_cars", [])))
         preset = PRESET_LABELS.get(self.wheel_input.requested_preset, "AUTO DETECT")
-        transmission = str(self.config.get("transmission", "automatic")).upper()
+        transmission = str(self.game_config.get("transmission", "automatic")).upper()
         return (f"CAREER  {races} RACES / {wins} WINS     "
                 f"CREDITS  {self.profile.credits:,}     "
                 f"CAR  {car_name} ({unlocked_count}/{len(CAR_SPECS)})     "
@@ -454,11 +454,11 @@ class RGDVDGame(ShowBase):
         return value or "OPEN-LOBBY"
 
     def _save_menu_settings(self) -> None:
-        self.config["nickname"] = self._nickname()
-        self.config["room"] = self._room()
-        self.config["server_url"] = self.server_entry.get().strip() or DEFAULT_SERVER_URL
-        self.config["car_id"] = self.car_id
-        save_config(self.config)
+        self.game_config["nickname"] = self._nickname()
+        self.game_config["room"] = self._room()
+        self.game_config["server_url"] = self.server_entry.get().strip() or DEFAULT_SERVER_URL
+        self.game_config["car_id"] = self.car_id
+        save_config(self.game_config)
 
     def _bind_events(self) -> None:
         for key in self.controls:
@@ -495,26 +495,26 @@ class RGDVDGame(ShowBase):
         index = PRESETS.index(current) if current in PRESETS else 0
         preset = PRESETS[(index + 1) % len(PRESETS)]
         self.wheel_input.set_preset(preset)
-        save_config(self.config)
+        save_config(self.game_config)
         label = PRESET_LABELS[preset]
         self._refresh_menu(f"CONTROL PROFILE: {label}  |  Reconnect the wheel if needed.")
 
     def cycle_transmission(self) -> None:
-        current = str(self.config.get("transmission", "automatic")).lower()
+        current = str(self.game_config.get("transmission", "automatic")).lower()
         mode = "manual" if current != "manual" else "automatic"
-        self.config["transmission"] = mode
+        self.game_config["transmission"] = mode
         if self.physics is not None:
             self.physics.set_transmission_mode(mode)
-        save_config(self.config)
+        save_config(self.game_config)
         label = "MANUAL" if mode == "manual" else "AUTOMATIC"
         self._refresh_menu(f"TRANSMISSION: {label}  |  F7 toggles in game; Q/E shift.")
 
     def cycle_quality(self) -> None:
         qualities = ("low", "medium", "high")
-        current = str(self.config.get("quality", "medium")).lower()
-        self.config["quality"] = qualities[(qualities.index(current) + 1)
+        current = str(self.game_config.get("quality", "medium")).lower()
+        self.game_config["quality"] = qualities[(qualities.index(current) + 1)
                                            % len(qualities)] if current in qualities else "medium"
-        save_config(self.config)
+        save_config(self.game_config)
         self._refresh_menu()
 
     def _close_network(self) -> None:
@@ -611,7 +611,7 @@ class RGDVDGame(ShowBase):
         self._save_menu_settings()
         self._close_network()
         try:
-            base_url = str(self.config.get("server_url", DEFAULT_SERVER_URL)).strip()
+            base_url = str(self.game_config.get("server_url", DEFAULT_SERVER_URL)).strip()
             self.network_session = OnlineSession(base_url, self._room(), self._nickname())
             self.start_race("ONLINE")
             self._refresh_hud_status("CONNECTING TO ONLINE ROOM...")
@@ -628,7 +628,7 @@ class RGDVDGame(ShowBase):
     def _setup_lighting(self) -> None:
         self._clear_lighting()
         ambient = AmbientLight("soft-sky-ambient")
-        quality = str(self.config.get("quality", "medium")).lower()
+        quality = str(self.game_config.get("quality", "medium")).lower()
         ambient.setColor(Vec4(0.52 if quality == "low" else 0.43,
                               0.55 if quality == "low" else 0.47,
                               0.60 if quality == "low" else 0.53, 1))
@@ -638,7 +638,7 @@ class RGDVDGame(ShowBase):
 
         sun = DirectionalLight("late-afternoon-sun")
         sun.setColor(Vec4(1.0, 0.91, 0.77, 1))
-        if self.config.get("shadows", True) and quality != "low":
+        if self.game_config.get("shadows", True) and quality != "low":
             sun.setShadowCaster(True, 1024 if quality == "medium" else 2048,
                                 1024 if quality == "medium" else 2048)
         sun_np = self.scene_root.attachNewNode(sun)
@@ -658,9 +658,9 @@ class RGDVDGame(ShowBase):
             self.scene_root.removeNode()
         self.scene_root = self.render.attachNewNode("race-scene")
         self._setup_lighting()
-        self.track = UrbanCity(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
+        self.track = UrbanCity(self.scene_root, quality=str(self.game_config.get("quality", "medium")).lower())
         self.physics = VehiclePhysics(x=0.0, y=-120.0, heading=0.0, car_id=self.car_id)
-        self.physics.set_transmission_mode(str(self.config.get("transmission", "automatic")))
+        self.physics.set_transmission_mode(str(self.game_config.get("transmission", "automatic")))
         paint = get_car_spec(self.car_id)["paint"]
         vehicle_class = VolgaCar if self.car_id == "volga_2410" else SportsCar
         self.car = vehicle_class(self.scene_root, paint=paint)
@@ -1004,7 +1004,7 @@ class RGDVDGame(ShowBase):
 
     def userExit(self) -> None:
         self._close_network()
-        save_config(self.config)
+        save_config(self.game_config)
         super().userExit()
 
 
