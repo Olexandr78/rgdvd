@@ -47,6 +47,7 @@ class VehiclePhysics:
         self.yaw_rate = 0.0
         self.steer_angle = 0.0
         self.gear = 1
+        self.transmission_mode = "automatic"
         self.rpm = self.IDLE_RPM
         self.throttle = 0.0
         self.brake = 0.0
@@ -81,8 +82,25 @@ class VehiclePhysics:
         wheel_rpm = abs(self.speed) / (2.0 * math.pi * self.WHEEL_RADIUS_M) * 60.0
         return self._clamp(wheel_rpm * ratio, self.IDLE_RPM, self.REDLINE_RPM)
 
+    def set_transmission_mode(self, mode: str) -> None:
+        if mode not in ("automatic", "manual"):
+            raise ValueError("Transmission mode must be automatic or manual")
+        self.transmission_mode = mode
+
+    def shift_up(self) -> None:
+        if self.gear < len(self.GEAR_RATIOS):
+            self.gear += 1
+            self.rpm = self._calculate_rpm()
+
+    def shift_down(self) -> None:
+        if self.gear > 1:
+            self.gear -= 1
+            self.rpm = self._calculate_rpm()
+
     def _shift_if_needed(self) -> None:
         self.rpm = self._calculate_rpm()
+        if self.transmission_mode == "manual":
+            return
         if self.rpm > 7100.0 and self.gear < len(self.GEAR_RATIOS):
             self.gear += 1
             self.rpm = self._calculate_rpm()
