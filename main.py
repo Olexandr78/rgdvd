@@ -532,17 +532,25 @@ class RGDVDGame(ShowBase):
         self.track = UrbanCity(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
         self.physics = VehiclePhysics(x=0.0, y=-120.0, heading=0.0, car_id=self.car_id)
         paint = get_car_spec(self.car_id)["paint"]
-        self.car = SportsCar(self.scene_root, paint=paint)
+        vehicle_class = VolgaCar if self.car_id == "volga_2410" else SportsCar
+        self.car = vehicle_class(self.scene_root, paint=paint)
         self.car.reset_pose(self.physics.x, self.physics.y, self.physics.heading)
+        self.animated_arrows = []
         # Open-world street driving: no circuit racing line or lap AI.
         self.ai_drivers = []
         self.remote_cars = {}
         self.camera.setPos(0, -139, 7)
         self.camera.lookAt(0, -120, 1)
 
-    def start_race(self, mode: str = "QUICK") -> None:
+    def start_race(self, mode: str = "QUICK",
+                   event_id: str | None = None) -> None:
         self.mode = mode
+        self.current_event = EVENT_BY_ID.get(event_id) if event_id else None
         self._build_scene()
+        if self.current_event is not None:
+            self._setup_event_route(self.current_event)
+        if self.audio:
+            self.audio.start()
         self.menu.hide()
         self.pause_menu.hide()
         self.result_menu.hide()
@@ -560,8 +568,12 @@ class RGDVDGame(ShowBase):
     def restart_race(self) -> None:
         if self.physics is None or self.car is None:
             return
-        self.physics.reset(x=0.0, y=-120.0, heading=0.0)
-        self.car.reset_pose(self.physics.x, self.physics.y, self.physics.heading)
+        if self.current_event is not None:
+            self._build_scene()
+            self._setup_event_route(self.current_event)
+        else:
+            self.physics.reset(x=0.0, y=-120.0, heading=0.0)
+            self.car.reset_pose(self.physics.x, self.physics.y, self.physics.heading)
         for driver in self.ai_drivers:
             driver.reset()
         self.race_time = 0.0
@@ -576,7 +588,9 @@ class RGDVDGame(ShowBase):
         self.hud_bottom.show()
 
     def toggle_pause(self) -> None:
-        if self.state == "RACING":
+        if self.state == "MAP":
+            self.close_world_map()
+        elif self.state == "RACING":
             self.state = "PAUSED"
             self.pause_menu.show()
         elif self.state == "PAUSED":
@@ -588,6 +602,11 @@ class RGDVDGame(ShowBase):
 
     def return_to_menu(self) -> None:
         self.state = "MENU"
+        self.current_event = None
+        if self.map_screen is not None:
+            self.map_screen.hide()
+        if self.audio:
+            self.audio.stop()
         self._close_network()
         if self.scene_root is not None:
             self._clear_lighting()
@@ -613,11 +632,91 @@ class RGDVDGame(ShowBase):
                 handbrake=self.controls["space"]), dt)
             self.car.update(self.physics.x, self.physics.y, self.physics.heading,
                             self.physics.speed, self.physics.steer_angle, dt)
+            if self.audio:
+                self.audio.update(self.physics.rpm, throttle,
+                                  self.physics.lateral_speed,
+                                  self.controls["space"], self.physics.gear)
+            self._animate_route_arrows()
+            if self.current_event is not None:
+                self._update_event_progress()
 
             self._update_network(dt)
             self.race_time += dt
             self._update_hud()
         return task.cont
+
+    def _setup_event_route(self, event) -> None:
+        route = list(event.route)
+        if len(route) < 2 or self.physics is None or self.car is None:
+            return
+        self.event_targets = route[1:] + ([route[0]] if event.event_type == "CIRCUIT" else [])
+        self.event_target_index = 0
+        self.event_lap = 1
+        self.event_laps = event.laps
+        self.animated_arrows = []
+        for index, point in enumerate(self.event_targets):
+            following = route[(index + 2) % len(route)]
+            self._make_route_gate(point, following[0], following[1])
+        dx = route[1][0] - route[0][0]
+        dy = route[1][1] - route[0][1]
+        length = math.hypot(dx, dy) or 1.0
+        start_x = route[0][0] - dx / length * 20.0
+        start_y = route[0][1] - dy / length * 20.0
+        heading = math.atan2(-dx, dy)
+        self.physics.reset(start_x, start_y, heading)
+        self.car.reset_pose(start_x, start_y, heading)
+        self.camera.setPos(start_x, start_y - 18, 7)
+        self.camera.lookAt(start_x, start_y, 1)
+
+    def _make_route_gate(self, point, next_x: float, next_y: float) -> None:
+        if self.scene_root is None:
+            return
+        gate = self.scene_root.attachNewNode("blue-arrow-checkpoint")
+        gate.setPos(point[0], point[1], 0)
+        heading = math.degrees(math.atan2(-(next_x - point[0]),
+                                          next_y - point[1]))
+        gate.setH(heading)
+        blue = (0.015, 0.36, 0.95, 1)
+        for side in (-10.0, 10.0):
+            post = box(gate, "blue-checkpoint-post", (side, 0, 1.35),
+                       (0.52, 0.62, 2.7), blue)
+            post.setLightOff(1)
+            post.setColorScale(0.75, 0.88, 1.25, 1)
+        beam = box(gate, "blue-checkpoint-beam", (0, 0, 2.85),
+                   (20.5, 0.48, 0.48), blue)
+        beam.setLightOff(1)
+        beam.setColorScale(0.65, 0.84, 1.35, 1)
+        for base_x in (-1.1, 0.0, 1.1):
+            arrow = gate.attachNewNode("animated-chevron")
+            arrow.setPos(base_x, -0.28, 2.86)
+            for angle in (-42, 42):
+                segment = box(arrow, "arrow-segment", (0, 0, 0),
+                              (0.13, 0.12, 0.54), (0.18, 0.72, 1.0, 1))
+                segment.setR(angle)
+                segment.setLightOff(1)
+                segment.setColorScale(0.55, 0.85, 1.45, 1)
+            self.animated_arrows.append((arrow, base_x))
+
+    def _animate_route_arrows(self) -> None:
+        for index, (arrow, base_x) in enumerate(self.animated_arrows):
+            pulse = 0.5 + 0.5 * math.sin(self.race_time * 5.0 + index * 0.8)
+            arrow.setX(base_x + math.sin(self.race_time * 2.4 + index) * 0.10)
+            arrow.setColorScale(0.7 + pulse * 0.3, 0.85 + pulse * 0.15, 1.2, 1)
+
+    def _update_event_progress(self) -> None:
+        if not self.current_event or not self.physics or not self.event_targets:
+            return
+        target = self.event_targets[self.event_target_index]
+        distance = math.hypot(self.physics.x - target[0],
+                              self.physics.y - target[1])
+        if distance <= 15.0:
+            self.event_target_index += 1
+            if self.event_target_index >= len(self.event_targets):
+                if self.event_lap < self.event_laps:
+                    self.event_lap += 1
+                    self.event_target_index = 0
+                else:
+                    self._finish_race()
 
     def _update_network(self, dt: float) -> None:
         if self.network_session is None or self.physics is None:
