@@ -1,4 +1,4 @@
-"""Procedural GT-style player car model for the RGDVD prototype."""
+"""Procedural vehicle models for RGDVD."""
 from __future__ import annotations
 
 from panda3d.core import Material, NodePath, TransparencyAttrib, Vec4
@@ -24,50 +24,42 @@ class SportsCar:
         node.setMaterial(material, 1)
 
     def _build_body(self) -> None:
-        body_color = self.paint_color
-        body = make_car_body(self.root, "sculpted-body", body_color)
-        self._paint(body, "metallic-red-clearcoat", 0.15)
-
-        # Lower side skirts and front/rear diffusers.
+        body = make_car_body(self.root, "sculpted-body", self.paint_color)
+        self._paint(body, "metallic-clearcoat", 0.15)
         for side in (-1, 1):
-            skirt = box(self.root, "side-skirt", (side*0.91, -0.05, 0.48),
-                        (0.15, 2.55, 0.22), (0.055, 0.06, 0.07, 1))
-            skirt.setColorScale(0.8, 0.8, 0.84, 1)
+            box(self.root, "side-skirt", (side*0.91, -0.05, 0.48),
+                (0.15, 2.55, 0.22), (0.055, 0.06, 0.07, 1))
             box(self.root, "front-air-intake", (side*0.48, 2.12, 0.72),
                 (0.60, 0.12, 0.22), (0.025, 0.03, 0.035, 1))
             box(self.root, "side-vent", (side*0.985, 0.95, 0.98),
                 (0.025, 0.55, 0.13), (0.025, 0.028, 0.032, 1))
-
         cabin = box(self.root, "cabin-underframe", (0, -0.02, 1.57),
                     (1.38, 2.02, 0.64), (0.045, 0.055, 0.065, 1))
         cabin.setColorScale(0.72, 0.75, 0.8, 1)
         roof = box(self.root, "roof-panel", (0, -0.10, 2.08),
-                   (1.18, 1.22, 0.12), body_color)
+                   (1.18, 1.22, 0.12), self.paint_color)
         self._paint(roof, "roof-paint", 0.18)
-
         glass_color = (0.11, 0.20, 0.25, 0.88)
-        windshield = make_glass(self.root, "front-windshield", [
-            (-0.58, 0.86, 1.48), (0.58, 0.86, 1.48),
-            (0.50, 0.48, 2.00), (-0.50, 0.48, 2.00),
-        ], glass_color)
-        rear_glass = make_glass(self.root, "rear-glass", [
-            (-0.50, -0.72, 2.00), (0.50, -0.72, 2.00),
-            (0.61, -1.12, 1.48), (-0.61, -1.12, 1.48),
-        ], glass_color)
-        for glass in (windshield, rear_glass):
+        glass_parts = [
+            make_glass(self.root, "front-windshield", [
+                (-0.58, 0.86, 1.48), (0.58, 0.86, 1.48),
+                (0.50, 0.48, 2.00), (-0.50, 0.48, 2.00)], glass_color),
+            make_glass(self.root, "rear-glass", [
+                (-0.50, -0.72, 2.00), (0.50, -0.72, 2.00),
+                (0.61, -1.12, 1.48), (-0.61, -1.12, 1.48)], glass_color),
+        ]
+        for glass in glass_parts:
             glass.setTransparency(TransparencyAttrib.MAlpha)
             glass.setDepthWrite(False)
-
         for side in (-1, 1):
             side_glass = make_glass(self.root, "side-window", [
                 (side*0.70, -0.88, 1.56), (side*0.70, 0.69, 1.56),
-                (side*0.56, 0.43, 1.98), (side*0.56, -0.67, 1.98),
-            ], (0.10, 0.17, 0.21, 0.82))
+                (side*0.56, 0.43, 1.98), (side*0.56, -0.67, 1.98)],
+                (0.10, 0.17, 0.21, 0.82))
             side_glass.setTransparency(TransparencyAttrib.MAlpha)
             side_glass.setDepthWrite(False)
             box(self.root, "door-handle", (side*0.985, -0.28, 1.02),
                 (0.035, 0.28, 0.055), (0.50, 0.52, 0.55, 1))
-
         box(self.root, "front-grille", (0, 2.13, 0.82),
             (1.28, 0.08, 0.24), (0.018, 0.022, 0.026, 1))
         box(self.root, "front-splitter", (0, 2.24, 0.43),
@@ -75,23 +67,18 @@ class SportsCar:
         box(self.root, "rear-diffuser", (0, -2.17, 0.48),
             (1.72, 0.30, 0.18), (0.025, 0.028, 0.032, 1))
         for side in (-1, 1):
-            exhaust = cylinder_x(self.root, "exhaust-tip", 0.075, 0.11,
-                                 (0.42, 0.44, 0.46, 1), 16)
-            exhaust.setPos(side*0.57, -2.20, 0.56)
-            exhaust.setH(90)
-
-        for side in (-1, 1):
+            cylinder_x(self.root, "exhaust-tip", 0.075, 0.11,
+                       (0.42, 0.44, 0.46, 1), 16).setPos(side*0.57, -2.20, 0.56)
             box(self.root, "wing-support", (side*0.55, -1.88, 1.45),
                 (0.07, 0.10, 0.72), (0.045, 0.05, 0.055, 1))
         spoiler = box(self.root, "rear-wing", (0, -1.91, 1.84),
                       (2.08, 0.48, 0.09), (0.035, 0.04, 0.045, 1))
-        self._paint(spoiler, "carbon-fiber-wing", 0.35)
-
+        self._paint(spoiler, "carbon-wing", 0.35)
         for side in (-1, 1):
             box(self.root, "mirror-arm", (side*0.82, 0.70, 1.53),
                 (0.28, 0.07, 0.06), (0.06, 0.06, 0.07, 1))
             mirror = box(self.root, "mirror-housing", (side*0.96, 0.71, 1.57),
-                         (0.24, 0.28, 0.18), body_color)
+                         (0.24, 0.28, 0.18), self.paint_color)
             self._paint(mirror, "mirror-paint", 0.18)
 
     def _build_wheels(self) -> None:
@@ -136,7 +123,6 @@ class SportsCar:
             signal = box(self.root, "side-marker", (side*0.94, 1.35, 0.91),
                          (0.035, 0.20, 0.075), (0.95, 0.38, 0.02, 1))
             signal.setLightOff(1)
-
         box(self.root, "number-plate", (0, 2.245, 0.66),
             (0.56, 0.035, 0.13), (0.80, 0.82, 0.77, 1))
 
@@ -157,3 +143,87 @@ class SportsCar:
         for wheel in self.wheels:
             wheel.setP(0)
             wheel.setH(0)
+
+
+class VolgaCar(SportsCar):
+    """A boxy, period-correct Volga GAZ-24-10 silhouette made from primitives."""
+
+    def _build_body(self) -> None:
+        body_color = self.paint_color
+        body = box(self.root, "Volga-four-door-sedan-body", (0, 0, 0.93),
+                   (1.86, 4.62, 0.62), body_color)
+        self._paint(body, "Volga-enamel", 0.22)
+        hood = box(self.root, "Volga-long-bonnet", (0, 1.48, 1.20),
+                   (1.78, 1.40, 0.22), body_color)
+        trunk = box(self.root, "Volga-trunk", (0, -1.62, 1.20),
+                    (1.78, 1.02, 0.22), body_color)
+        self._paint(hood, "Volga-bonnet-paint", 0.22)
+        self._paint(trunk, "Volga-trunk-paint", 0.22)
+        cabin = box(self.root, "Volga-cabin", (0, -0.02, 1.68),
+                    (1.62, 2.35, 0.82), body_color)
+        roof = box(self.root, "Volga-flat-roof", (0, -0.02, 2.12),
+                   (1.55, 1.55, 0.12), body_color)
+        self._paint(cabin, "Volga-cabin-paint", 0.2)
+        self._paint(roof, "Volga-roof-paint", 0.2)
+        glass_color = (0.10, 0.17, 0.20, 0.86)
+        windows = [
+            make_glass(self.root, "Volga-windscreen", [
+                (-0.70, 0.80, 1.60), (0.70, 0.80, 1.60),
+                (0.68, 0.48, 2.05), (-0.68, 0.48, 2.05)], glass_color),
+            make_glass(self.root, "Volga-rear-window", [
+                (-0.68, -0.48, 2.05), (0.68, -0.48, 2.05),
+                (0.70, -0.83, 1.60), (-0.70, -0.83, 1.60)], glass_color),
+        ]
+        for glass in windows:
+            glass.setTransparency(TransparencyAttrib.MAlpha)
+            glass.setDepthWrite(False)
+        for side in (-1, 1):
+            for y in (-0.55, 0.48):
+                pane = make_glass(self.root, "Volga-side-window", [
+                    (side*0.82, y-0.44, 1.70), (side*0.82, y+0.44, 1.70),
+                    (side*0.82, y+0.34, 2.04), (side*0.82, y-0.34, 2.04)],
+                    glass_color)
+                pane.setTransparency(TransparencyAttrib.MAlpha)
+                pane.setDepthWrite(False)
+            for y in (-0.95, 0.05):
+                box(self.root, "Volga-door-handle", (side*0.94, y, 1.20),
+                    (0.035, 0.25, 0.06), (0.72, 0.72, 0.68, 1))
+            box(self.root, "Volga-chrome-side-trim", (side*0.94, 0, 0.94),
+                (0.035, 3.55, 0.045), (0.68, 0.69, 0.66, 1))
+            box(self.root, "Volga-side-mirror", (side*0.92, 0.78, 1.55),
+                (0.16, 0.25, 0.18), (0.65, 0.66, 0.64, 1))
+        box(self.root, "Volga-front-grille", (0, 2.32, 1.03),
+            (0.90, 0.06, 0.32), (0.72, 0.73, 0.70, 1))
+        for side in (-1, 1):
+            lamp = box(self.root, "Volga-round-headlamp", (side*0.62, 2.33, 1.16),
+                       (0.34, 0.07, 0.34), (0.91, 0.94, 0.96, 1))
+            lamp.setLightOff(1)
+            box(self.root, "Volga-front-indicator", (side*0.84, 2.30, 0.96),
+                (0.12, 0.07, 0.12), (1.0, 0.48, 0.04, 1))
+            box(self.root, "Volga-tail-lamp", (side*0.69, -2.34, 1.15),
+                (0.30, 0.07, 0.35), (0.72, 0.025, 0.015, 1))
+        for y in (-2.35, 2.36):
+            bumper = box(self.root, "Volga-chrome-bumper", (0, y, 0.76),
+                         (2.00, 0.18, 0.16), (0.70, 0.72, 0.72, 1))
+            self._paint(bumper, "Volga-chrome", 0.12)
+        box(self.root, "Volga-number-plate", (0, 2.405, 0.88),
+            (0.48, 0.025, 0.12), (0.86, 0.87, 0.83, 1))
+
+    def _build_wheels(self) -> None:
+        for x in (-0.98, 0.98):
+            for y in (-1.48, 1.48):
+                pivot = self.root.attachNewNode("Volga-wheel")
+                pivot.setPos(x, y, 0.52)
+                if y > 0:
+                    self.front_wheel_pivots.append(pivot)
+                cylinder_x(pivot, "Volga-black-tyre", 0.43, 0.27,
+                           (0.025, 0.027, 0.029, 1), 28)
+                cylinder_x(pivot, "Volga-steel-wheel", 0.29, 0.29,
+                           (0.56, 0.58, 0.57, 1), 24)
+                cylinder_x(pivot, "Volga-hubcap", 0.13, 0.31,
+                           (0.78, 0.79, 0.76, 1), 20)
+                self.wheels.append(pivot)
+
+    def _build_lights_and_details(self) -> None:
+        # The Volga's round headlamps and chrome bumpers are built in its body.
+        return
