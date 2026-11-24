@@ -8,11 +8,16 @@ from typing import Any
 
 APP_DIR = Path(os.environ.get("APPDATA", Path.home())) / "RGDVD"
 CONFIG_PATH = APP_DIR / "settings.json"
+DEFAULT_SERVER_URL = "https://rgdvd.onrender.com"
+OLD_SERVER_URLS = {
+    "wss://rgdvd-online.onrender.com",
+    "https://rgdvd-online.onrender.com",
+}
 
 DEFAULTS: dict[str, Any] = {
     "nickname": "Driver",
     "room": "OPEN-LOBBY",
-    "server_url": "wss://rgdvd-online.onrender.com",
+    "server_url": DEFAULT_SERVER_URL,
     "quality": "medium",
     "car_id": "street_gt",
     "shadows": True,
@@ -31,6 +36,10 @@ def load_config() -> dict[str, Any]:
                            if key in DEFAULTS})
     except (OSError, ValueError, TypeError):
         pass
+
+    # Migrate installations that still contain the previous placeholder URL.
+    if str(config.get("server_url", "")).strip().rstrip("/") in OLD_SERVER_URLS:
+        config["server_url"] = DEFAULT_SERVER_URL
     return config
 
 
