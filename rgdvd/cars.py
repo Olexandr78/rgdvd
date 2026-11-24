@@ -11,6 +11,15 @@ CAR_SPECS = {
         "paint": (0.64, 0.018, 0.012, 1.0),
         "required_wins": 0,
     },
+    "volga_2410": {
+        "name": "Volga GAZ-24-10",
+        "mass_kg": 1420.0,
+        "torque_multiplier": 0.68,
+        "max_speed_mps": 40.5,
+        "grip_multiplier": 0.72,
+        "paint": (0.025, 0.22, 0.19, 1.0),
+        "required_wins": 0,
+    },
     "touring_v8": {
         "name": "Touring V8",
         "mass_kg": 1560.0,
