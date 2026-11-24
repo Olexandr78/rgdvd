@@ -15,13 +15,17 @@ from panda3d.core import (
 
 from rgdvd import __version__
 from rgdvd.cars import CAR_SPECS, get_car_spec, unlocked_cars
-from rgdvd.config import DEFAULT_SERVER_URL, load_config, save_config
+from rgdvd.config import APP_DIR, DEFAULT_SERVER_URL, load_config, save_config
 from rgdvd.network import LanSession
 from rgdvd.online import OnlineSession
 from rgdvd.physics import Controls, VehiclePhysics
 from rgdvd.profile import CareerProfile
 from rgdvd.city import UrbanCity
-from rgdvd.vehicle import SportsCar
+from rgdvd.vehicle import SportsCar, VolgaCar
+from rgdvd.audio import VehicleAudio
+from rgdvd.events import EVENT_BY_ID
+from rgdvd.map_screen import WorldMapScreen
+from rgdvd.geometry import box
 
 
 loadPrcFileData("", "win-size 1366 768")
@@ -38,6 +42,11 @@ class RGDVDGame(ShowBase):
         self.setBackgroundColor(0.44, 0.61, 0.75, 1)
         self.config = load_config()
         self.profile = CareerProfile()
+        self.audio: VehicleAudio | None = None
+        try:
+            self.audio = VehicleAudio(self.loader, APP_DIR)
+        except Exception:
+            self.audio = None
         self.car_id = str(self.config.get("car_id", "street_gt"))
         if not self.profile.is_unlocked(self.car_id):
             self.car_id = "street_gt"
@@ -68,11 +77,21 @@ class RGDVDGame(ShowBase):
         self.last_x = 0.0
         self.last_lap_time = 0.0
         self.best_lap: float | None = None
+        self.current_event = None
+        self.event_targets: list[tuple[float, float]] = []
+        self.event_target_index = 0
+        self.event_lap = 1
+        self.event_laps = 1
+        self.animated_arrows = []
+        self.map_origin = "MENU"
+        self.map_screen: WorldMapScreen | None = None
         self.controls = {key: False for key in (
             "w", "s", "a", "d", "arrow_up", "arrow_down",
             "arrow_left", "arrow_right", "space",
         )}
         self._setup_menu()
+        self.map_screen = WorldMapScreen(
+            self.aspect2d, self.start_selected_event, self.close_world_map)
         self._bind_events()
         self.taskMgr.add(self._game_update, "rgdvd-game-update")
         self.taskMgr.add(self._camera_update, "rgdvd-camera-update")
@@ -102,7 +121,7 @@ class RGDVDGame(ShowBase):
             pos=(-1.42, 0, 0.83), text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="RACING  /  DRIVE YOUR LINE",
+            parent=self.menu, text="NIGHT STREET SERIES  /  DRIVE YOUR LINE",
             text_scale=0.027, text_fg=(0.57, 0.66, 0.74, 1),
             frameColor=(0, 0, 0, 0), pos=(-0.83, 0, 0.835),
             text_align=TextNode.ALeft,
@@ -131,18 +150,18 @@ class RGDVDGame(ShowBase):
             text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="Explore the city streets and find your own route.",
+            parent=self.menu, text="Choose an event on the city map or cruise freely.",
             text_scale=0.027, text_fg=(0.55, 0.63, 0.70, 1),
             frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.475),
             text_align=TextNode.ALeft,
         )
-        self._menu_button("CITY FREE ROAM", -0.76, 0.285, self.start_career,
+        self._menu_button("FREE ROAM", -0.76, 0.285, self.start_career,
                           width=0.59, accent=True)
-        self._menu_button("STREET DRIVE", -0.76, 0.055, self.start_quick_race,
+        self._menu_button("WORLD MAP / EVENTS", -0.76, 0.055, self.start_quick_race,
                           width=0.59)
         DirectLabel(
             parent=self.menu,
-            text="OPEN CITY     /     STREET DRIVING     /     LOCAL SAVES",
+            text="53 EVENTS     /     OPEN CITY     /     LOCAL CAREER",
             text_scale=0.025, text_fg=(0.53, 0.62, 0.69, 1),
             frameColor=(0, 0, 0, 0), pos=(-0.76, 0, -0.265),
         )
@@ -341,6 +360,7 @@ class RGDVDGame(ShowBase):
             self.accept(key + "-up", self._set_control, [key, False])
         self.accept("escape", self.toggle_pause)
         self.accept("r", self.restart_race)
+        self.accept("m", self.toggle_world_map)
 
     def _set_control(self, key: str, value: bool) -> None:
         self.controls[key] = value
@@ -384,9 +404,53 @@ class RGDVDGame(ShowBase):
         self.start_race("CAREER")
 
     def start_quick_race(self) -> None:
+        self.open_world_map()
+
+    def open_world_map(self) -> None:
+        if self.state not in ("MENU", "RACING") or self.map_screen is None:
+            return
+        self.map_origin = self.state
+        if self.state == "MENU":
+            self.menu.hide()
+            x, y = 0.0, -120.0
+        else:
+            x = self.physics.x if self.physics else 0.0
+            y = self.physics.y if self.physics else -120.0
+            self.hud_text.hide()
+            self.hud_bottom.hide()
+            self.state = "MAP"
+            if self.audio:
+                self.audio.stop()
+        self.map_screen.show(x, y)
+
+    def close_world_map(self) -> None:
+        if self.map_screen is not None:
+            self.map_screen.hide()
+        if self.map_origin == "MENU":
+            self.state = "MENU"
+            self.menu.show()
+        elif self.map_origin == "RACING":
+            self.state = "RACING"
+            self.hud_text.show()
+            self.hud_bottom.show()
+            if self.audio:
+                self.audio.start()
+
+    def toggle_world_map(self) -> None:
+        if self.state == "MAP":
+            self.close_world_map()
+        elif self.state in ("MENU", "RACING"):
+            self.open_world_map()
+
+    def start_selected_event(self, event_id: str) -> None:
+        if event_id not in EVENT_BY_ID:
+            return
         self._save_menu_settings()
         self._close_network()
-        self.start_race("QUICK")
+        if self.map_screen is not None:
+            self.map_screen.hide()
+        self.menu.hide()
+        self.start_race("EVENT", event_id)
 
     def host_lan(self) -> None:
         self._save_menu_settings()
