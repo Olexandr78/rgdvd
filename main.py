@@ -130,14 +130,14 @@ class RGDVDGame(ShowBase):
             text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="Build your career or jump straight into a race.",
+            parent=self.menu, text="Explore the city streets and find your own route.",
             text_scale=0.027, text_fg=(0.55, 0.63, 0.70, 1),
             frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.475),
             text_align=TextNode.ALeft,
         )
-        self._menu_button("CAREER", -0.76, 0.285, self.start_career,
+        self._menu_button("CITY FREE ROAM", -0.76, 0.285, self.start_career,
                           width=0.59, accent=True)
-        self._menu_button("QUICK RACE", -0.76, 0.055, self.start_quick_race,
+        self._menu_button("STREET DRIVE", -0.76, 0.055, self.start_quick_race,
                           width=0.59)
         DirectLabel(
             parent=self.menu,
