@@ -89,9 +89,11 @@ class RGDVDGame(ShowBase):
         self.map_screen: WorldMapScreen | None = None
         self.controls = {key: False for key in (
             "w", "s", "a", "d", "arrow_up", "arrow_down",
-            "arrow_left", "arrow_right", "space",
+            "arrow_left", "arrow_right", "space", "q", "e",
         )}
         self.wheel_input = WheelInput(self, self.config)
+        self._wheel_shift_up_was_pressed = False
+        self._wheel_shift_down_was_pressed = False
         self._setup_menu()
         self.map_screen = WorldMapScreen(
             self.aspect2d, self.start_selected_event, self.close_world_map)
@@ -241,14 +243,16 @@ class RGDVDGame(ShowBase):
             text_scale=0.027, text_fg=(0.72, 0.79, 0.84, 1),
             frameColor=(0, 0, 0, 0), pos=(0, 0, -0.835),
         )
-        self._menu_button("GARAGE / NEXT CAR", -1.05, -0.935, self.next_car,
-                          width=0.43, compact=True)
-        self._menu_button("WHEEL PRESET", -0.34, -0.935, self.cycle_controller_preset,
-                          width=0.43, compact=True)
-        self._menu_button("GRAPHICS", 0.43, -0.935, self.cycle_quality,
-                          width=0.34, compact=True)
-        self._menu_button("EXIT", 1.15, -0.935, self.userExit,
-                          width=0.25, compact=True, danger=True)
+        self._menu_button("GARAGE", -1.30, -0.935, self.next_car,
+                          width=0.25, compact=True)
+        self._menu_button("WHEEL", -0.66, -0.935, self.cycle_controller_preset,
+                          width=0.25, compact=True)
+        self._menu_button("GEARBOX", 0.0, -0.935, self.cycle_transmission,
+                          width=0.29, compact=True)
+        self._menu_button("GRAPHICS", 0.66, -0.935, self.cycle_quality,
+                          width=0.25, compact=True)
+        self._menu_button("EXIT", 1.30, -0.935, self.userExit,
+                          width=0.20, compact=True, danger=True)
 
         self.pause_menu = DirectFrame(
             frameColor=(0.015, 0.022, 0.032, 0.94),
@@ -338,10 +342,11 @@ class RGDVDGame(ShowBase):
         quality = str(self.config.get("quality", "medium")).upper()
         unlocked_count = len(unlocked_cars(self.profile.data.get("unlocked_cars", [])))
         preset = PRESET_LABELS.get(self.wheel_input.requested_preset, "AUTO DETECT")
+        transmission = str(self.config.get("transmission", "automatic")).upper()
         return (f"CAREER  {races} RACES / {wins} WINS     "
                 f"CREDITS  {self.profile.credits:,}     "
                 f"CAR  {car_name} ({unlocked_count}/{len(CAR_SPECS)})     "
-                f"GRAPHICS  {quality}     WHEEL  {preset}")
+                f"GRAPHICS  {quality}     WHEEL  {preset}     GEARBOX  {transmission}")
 
     def _refresh_menu(self, message: str | None = None) -> None:
         self.menu_status["text"] = message or self._menu_summary()
@@ -369,6 +374,7 @@ class RGDVDGame(ShowBase):
         self.accept("r", self.restart_race)
         self.accept("m", self.toggle_world_map)
         self.accept("f6", self.cycle_controller_preset)
+        self.accept("f7", self.cycle_transmission)
 
     def _set_control(self, key: str, value: bool) -> None:
         self.controls[key] = value
@@ -398,6 +404,16 @@ class RGDVDGame(ShowBase):
         save_config(self.config)
         label = PRESET_LABELS[preset]
         self._refresh_menu(f"CONTROL PROFILE: {label}  |  Reconnect the wheel if needed.")
+
+    def cycle_transmission(self) -> None:
+        current = str(self.config.get("transmission", "automatic")).lower()
+        mode = "manual" if current != "manual" else "automatic"
+        self.config["transmission"] = mode
+        if self.physics is not None:
+            self.physics.set_transmission_mode(mode)
+        save_config(self.config)
+        label = "MANUAL" if mode == "manual" else "AUTOMATIC"
+        self._refresh_menu(f"TRANSMISSION: {label}  |  F7 toggles in game; Q/E shift.")
 
     def cycle_quality(self) -> None:
         qualities = ("low", "medium", "high")
@@ -548,6 +564,7 @@ class RGDVDGame(ShowBase):
         self._setup_lighting()
         self.track = UrbanCity(self.scene_root, quality=str(self.config.get("quality", "medium")).lower())
         self.physics = VehiclePhysics(x=0.0, y=-120.0, heading=0.0, car_id=self.car_id)
+        self.physics.set_transmission_mode(str(self.config.get("transmission", "automatic")))
         paint = get_car_spec(self.car_id)["paint"]
         vehicle_class = VolgaCar if self.car_id == "volga_2410" else SportsCar
         self.car = vehicle_class(self.scene_root, paint=paint)
@@ -648,6 +665,13 @@ class RGDVDGame(ShowBase):
             brake = max(keyboard_brake, wheel.brake)
             steer = wheel.steer if wheel.connected else keyboard_steer
             handbrake = bool(self.controls["space"] or wheel.handbrake)
+            if self.physics.transmission_mode == "manual":
+                if self.controls["e"] or (wheel.shift_up and not self._wheel_shift_up_was_pressed):
+                    self.physics.shift_up()
+                if self.controls["q"] or (wheel.shift_down and not self._wheel_shift_down_was_pressed):
+                    self.physics.shift_down()
+            self._wheel_shift_up_was_pressed = wheel.shift_up
+            self._wheel_shift_down_was_pressed = wheel.shift_down
             self.physics.on_track = self.track.contains(self.physics.x, self.physics.y)
             self.physics.update(Controls(
                 throttle=throttle, brake=brake, steer=steer,
@@ -856,7 +880,7 @@ class RGDVDGame(ShowBase):
             f"{event_line}{network_line}{offroad}"
         )
         self.hud_bottom.setText(
-            "W/↑ THROTTLE   S/↓ BRAKE   A/D STEER   SPACE HANDBRAKE   R RESET   ESC PAUSE"
+            "W/↑ GAS   S/↓ BRAKE   A/D STEER   SPACE HANDBRAKE   Q/E SHIFT   F7 GEARBOX   R RESET"
         )
 
     def _camera_update(self, task):
