@@ -33,7 +33,7 @@ class WorldMapScreen:
         )
         DirectFrame(
             parent=self.root, frameColor=(0.025, 0.043, 0.060, 1),
-            frameSize=(-1.52, 0.47, -0.83, 0.68), pos=(-0.52, 0, -0.04),
+            frameSize=(-1.52, 0.47, -0.83, 0.68), pos=(0, 0, -0.04),
         )
         DirectFrame(
             parent=self.root, frameColor=(0.025, 0.043, 0.060, 1),
