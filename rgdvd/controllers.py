@@ -53,6 +53,8 @@ class WheelControls:
     brake: float = 0.0
     steer: float = 0.0
     handbrake: bool = False
+    shift_up: bool = False
+    shift_down: bool = False
     device_name: str = ""
     preset: str = "auto"
     connected: bool = False
@@ -202,8 +204,17 @@ class WheelInput:
         except Exception:
             handbrake = False
 
+        try:
+            shift_up = bool(device.is_button_pressed(
+                int(self.config.get("wheel_shift_up_button", 5))))
+            shift_down = bool(device.is_button_pressed(
+                int(self.config.get("wheel_shift_down_button", 4))))
+        except Exception:
+            shift_up = shift_down = False
+
         return WheelControls(
             throttle=throttle, brake=brake, steer=steer,
-            handbrake=handbrake, device_name=self._device_name,
+            handbrake=handbrake, shift_up=shift_up, shift_down=shift_down,
+            device_name=self._device_name,
             preset=preset, connected=True,
         )
