@@ -54,6 +54,18 @@ class UrbanCity:
     def _build_street_grid(self) -> None:
         extent = self.EXTENT
         # Continuous asphalt ribbons make a connected 1.9 x 1.9 km street grid.
+        lane_v, lane_t = [], []
+        cross_v, cross_t = [], []
+        stop_v, stop_t = [], []
+
+        def add_rect(vertices, triangles, x, y, width, depth, z=0.105):
+            base = len(vertices)
+            vertices.extend(((x-width/2, y-depth/2, z),
+                             (x+width/2, y-depth/2, z),
+                             (x+width/2, y+depth/2, z),
+                             (x-width/2, y+depth/2, z)))
+            triangles.extend(((base, base+1, base+2), (base, base+2, base+3)))
+
         for index in range(-8, 9):
             p = index * self.GRID
             box(self.root, "north-south-asphalt", (p, 0, 0.015),
@@ -75,10 +87,8 @@ class UrbanCity:
             for d in range(-15, 16):
                 along = d * 48.0
                 for offset in (-3.0, 3.0):
-                    box(self.root, "avenue-lane-dash", (p + offset, along, 0.095),
-                        (0.16, 8.0, 0.025), (0.78, 0.76, 0.66, 1))
-                    box(self.root, "boulevard-lane-dash", (along, p + offset, 0.095),
-                        (8.0, 0.16, 0.025), (0.78, 0.76, 0.66, 1))
+                    add_rect(lane_v, lane_t, p + offset, along, 0.16, 8.0)
+                    add_rect(lane_v, lane_t, along, p + offset, 8.0, 0.16)
 
         # Crosswalk bars at the grid intersections.
         for ix in range(-8, 9):
@@ -86,15 +96,11 @@ class UrbanCity:
                 cx, cy = ix * self.GRID, iy * self.GRID
                 for n in range(6):
                     offset = -7.5 + n * 3.0
-                    box(self.root, "crosswalk-stripe", (cx + offset, cy + 17.0, 0.105),
-                        (1.7, 5.0, 0.035), (0.82, 0.82, 0.77, 1))
-                    box(self.root, "crosswalk-stripe", (cx + 17.0, cy + offset, 0.105),
-                        (5.0, 1.7, 0.035), (0.82, 0.82, 0.77, 1))
+                    add_rect(cross_v, cross_t, cx + offset, cy + 17.0, 1.7, 5.0)
+                    add_rect(cross_v, cross_t, cx + 17.0, cy + offset, 5.0, 1.7)
                 # Stop lines before each intersection.
                 for side in (-1, 1):
-                    box(self.root, "junction-stop-line",
-                        (cx + side * 9.5, cy - 19.0, 0.105),
-                        (0.22, 8.0, 0.035), (0.88, 0.86, 0.78, 1))
+                    add_rect(stop_v, stop_t, cx + side * 9.5, cy - 19.0, 0.22, 8.0)
 
     def _building_windows(self, x: float, y: float, width: float,
                           depth: float, floors: int, floor_height: float,
@@ -205,9 +211,9 @@ class UrbanCity:
                 if self.quality == "low":
                     count = 1
                 elif self.quality == "medium":
-                    count = 2
+                    count = 2 if district == "downtown" else 1
                 else:
-                    count = 3
+                    count = 3 if district == "downtown" else 2
                 for building_index in range(count):
                     if count == 1:
                         bx, by = cx, cy
@@ -232,7 +238,7 @@ class UrbanCity:
         # Streetlights, traffic signals, poles, bins and occasional trees.
         for axis in ("x", "y"):
             for road_index in range(-8, 9):
-                for step in range(-7, 8):
+                for step in range(-4, 5):
                     along = step * 120.0 + 36.0
                     across = road_index * self.GRID + (10.0 if (step + road_index) % 2 else -10.0)
                     x, y = (across, along) if axis == "x" else (along, across)
