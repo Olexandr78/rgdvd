@@ -98,7 +98,10 @@ class WheelInput:
             return []
 
     def _select_device(self) -> Any | None:
-        devices = self._devices()
+        # Ignore keyboards/mice and select only devices exposing real axes.
+        devices = [device for device in self._devices()
+                   if any(self._axis(device, axis_name) is not None
+                          for axis_name in AXES)]
         if not devices:
             self._device = None
             self._device_name = ""
