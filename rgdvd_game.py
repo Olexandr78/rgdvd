@@ -752,24 +752,8 @@ class RGDVDGame(ShowBase):
         self.pause_menu.hide()
 
     def return_to_menu(self) -> None:
-        self.state = "MENU"
-        self.current_event = None
-        if self.map_screen is not None:
-            self.map_screen.hide()
-        if self.audio:
-            self.audio.stop()
-        self._close_network()
-        if self.scene_root is not None:
-            self._clear_lighting()
-            self.scene_root.removeNode()
-            self.scene_root = None
-        self.pause_menu.hide()
-        self.result_menu.hide()
-        self.hud_text.hide()
-        self.hud_bottom.hide()
-        self.gauge_root.hide()
-        self.menu.show()
-        self._refresh_menu()
+        """Close the 3D runtime; the CustomTkinter launcher becomes visible again."""
+        self.userExit()
 
     def _game_update(self, task):
         dt = min(globalClock.getDt(), 1.0 / 30.0)
@@ -1068,6 +1052,8 @@ class RGDVDGame(ShowBase):
 
     def userExit(self) -> None:
         self._close_network()
+        if self.audio:
+            self.audio.stop()
         save_config(self.game_config)
         super().userExit()
 
