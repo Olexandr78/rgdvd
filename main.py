@@ -85,6 +85,7 @@ class RGDVDGame(ShowBase):
         self.event_lap = 1
         self.event_laps = 1
         self.animated_arrows = []
+        self.route_barriers: list[tuple[float, float, float]] = []
         self.map_origin = "MENU"
         self.map_screen: WorldMapScreen | None = None
         self.controls = {key: False for key in (
@@ -102,157 +103,175 @@ class RGDVDGame(ShowBase):
         self.taskMgr.add(self._camera_update, "rgdvd-camera-update")
 
     def _setup_menu(self) -> None:
-        # Full-bleed carbon-dark background; the old 2.666-wide frame left
-        # unused blue strips on both sides of a 16:9 window.
+        # Carbon-fibre inspired motorsport front end with a clear action hierarchy.
         self.menu = DirectFrame(
-            frameColor=(0.025, 0.035, 0.048, 1),
+            frameColor=(0.012, 0.018, 0.027, 1),
             frameSize=(-1.78, 1.78, -1.0, 1.0), pos=(0, 0, 0),
         )
-
-        # Inner surface and racing-red header accent.
         DirectFrame(
-            parent=self.menu, frameColor=(0.040, 0.054, 0.070, 1),
-            frameSize=(-1.66, 1.66, -0.96, 0.96), pos=(0, 0, 0),
+            parent=self.menu, frameColor=(0.025, 0.037, 0.052, 1),
+            frameSize=(-1.68, 1.68, -0.91, 0.91), pos=(0, 0, 0),
         )
-        DirectFrame(
-            parent=self.menu, frameColor=(0.88, 0.075, 0.045, 1),
-            frameSize=(-1.55, 1.55, -0.009, 0.009), pos=(0, 0, 0.70),
-        )
-
+        # Header strip.
+        DirectFrame(parent=self.menu, frameColor=(0.86, 0.075, 0.045, 1),
+                    frameSize=(-1.68, 1.68, -0.012, 0.012), pos=(0, 0, 0.79))
         DirectLabel(
-            parent=self.menu, text="RGDVD", text_scale=0.125,
-            text_fg=(0.96, 0.97, 0.98, 1),
-            text_shadow=(0, 0, 0, 0.5), frameColor=(0, 0, 0, 0),
-            pos=(-1.42, 0, 0.83), text_align=TextNode.ALeft,
-        )
-        DirectLabel(
-            parent=self.menu, text="NIGHT STREET SERIES  /  DRIVE YOUR LINE",
-            text_scale=0.027, text_fg=(0.57, 0.66, 0.74, 1),
-            frameColor=(0, 0, 0, 0), pos=(-0.83, 0, 0.835),
+            parent=self.menu, text="RGDVD", text_scale=0.092,
+            text_fg=(0.97, 0.98, 1, 1), text_shadow=(0, 0, 0, 0.7),
+            frameColor=(0, 0, 0, 0), pos=(-1.48, 0, 0.84),
             text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text=f"BUILD  {__version__}",
-            text_scale=0.026, text_fg=(0.77, 0.82, 0.86, 1),
-            frameColor=(0, 0, 0, 0), pos=(1.43, 0, 0.835),
+            parent=self.menu, text="STREET RACING  /  OPEN CITY",
+            text_scale=0.025, text_fg=(0.60, 0.70, 0.79, 1),
+            frameColor=(0, 0, 0, 0), pos=(-0.78, 0, 0.855),
+            text_align=TextNode.ALeft,
+        )
+        DirectLabel(
+            parent=self.menu, text=f"BUILD {__version__}   •   PC",
+            text_scale=0.023, text_fg=(0.68, 0.76, 0.83, 1),
+            frameColor=(0, 0, 0, 0), pos=(1.46, 0, 0.855),
             text_align=TextNode.ARight,
         )
 
-        # Two balanced action panels.
+        # Left hero / garage panel.
         DirectFrame(
-            parent=self.menu, frameColor=(0.065, 0.082, 0.102, 1),
-            frameSize=(-0.70, 0.70, -0.54, 0.54), pos=(-0.76, 0, 0.105),
+            parent=self.menu, frameColor=(0.045, 0.063, 0.082, 1),
+            frameSize=(-0.76, 0.76, -0.58, 0.58), pos=(-0.83, 0, 0.055),
         )
         DirectFrame(
-            parent=self.menu, frameColor=(0.065, 0.082, 0.102, 1),
-            frameSize=(-0.70, 0.70, -0.54, 0.54), pos=(0.76, 0, 0.105),
+            parent=self.menu, frameColor=(0.86, 0.075, 0.045, 1),
+            frameSize=(-0.76, 0.025, -0.58, 0.58), pos=(-0.83, 0, 0.055),
         )
-
         DirectLabel(
-            parent=self.menu, text="SINGLE PLAYER",
-            text_scale=0.046, text_fg=(0.90, 0.93, 0.95, 1),
-            frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.545),
+            parent=self.menu, text="YOUR CITY. YOUR RULES.",
+            text_scale=0.027, text_fg=(0.98, 0.30, 0.18, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.43, 0, 0.48),
             text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="Choose an event on the city map or cruise freely.",
-            text_scale=0.027, text_fg=(0.55, 0.63, 0.70, 1),
-            frameColor=(0, 0, 0, 0), pos=(-1.30, 0, 0.475),
+            parent=self.menu, text="RGDVD",
+            text_scale=0.19, text_fg=(0.96, 0.98, 1, 1),
+            text_shadow=(0.02, 0.02, 0.02, 0.9),
+            frameColor=(0, 0, 0, 0), pos=(-1.43, 0, 0.20),
             text_align=TextNode.ALeft,
         )
-        self._menu_button("FREE ROAM", -0.76, 0.285, self.start_career,
-                          width=0.59, accent=True)
-        self._menu_button("WORLD MAP / EVENTS", -0.76, 0.055, self.start_quick_race,
-                          width=0.59)
+        DirectLabel(
+            parent=self.menu, text="NIGHT STREET SERIES",
+            text_scale=0.040, text_fg=(0.63, 0.75, 0.85, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.41, 0, 0.08),
+            text_align=TextNode.ALeft,
+        )
+        DirectFrame(
+            parent=self.menu, frameColor=(0.86, 0.075, 0.045, 1),
+            frameSize=(-0.56, 0.56, -0.006, 0.006), pos=(-0.83, 0, -0.08),
+        )
         DirectLabel(
             parent=self.menu,
-            text="53 EVENTS     /     OPEN CITY     /     LOCAL CAREER",
-            text_scale=0.025, text_fg=(0.53, 0.62, 0.69, 1),
-            frameColor=(0, 0, 0, 0), pos=(-0.76, 0, -0.265),
-        )
-
-        DirectLabel(
-            parent=self.menu, text="MULTIPLAYER",
-            text_scale=0.035, text_fg=(0.90, 0.93, 0.95, 1),
-            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.545),
+            text="53 EVENTS   /   6 DISTRICTS   /   OPEN-WORLD DRIVING",
+            text_scale=0.021, text_fg=(0.75, 0.82, 0.88, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.20),
             text_align=TextNode.ALeft,
         )
         DirectLabel(
-            parent=self.menu, text="Race together over Wi-Fi or the internet.",
-            text_scale=0.022, text_fg=(0.55, 0.63, 0.70, 1),
-            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.475),
+            parent=self.menu, text="CAREER PROGRESS",
+            text_scale=0.021, text_fg=(0.52, 0.64, 0.74, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.36),
             text_align=TextNode.ALeft,
         )
-        self._menu_button("HOST LAN GAME", 0.76, 0.31, self.host_lan,
-                          width=0.59)
-        self._menu_button("FIND LAN GAME", 0.76, 0.105, self.join_lan,
-                          width=0.59)
-        self._menu_button("ONLINE ROOM", 0.76, -0.10, self.join_online,
-                          width=0.59, accent=True)
         DirectLabel(
-            parent=self.menu, text="LAN  /  NO INTERNET REQUIRED",
-            text_scale=0.021, text_fg=(0.53, 0.62, 0.69, 1),
-            frameColor=(0, 0, 0, 0), pos=(0.76, 0, -0.265),
+            parent=self.menu, text=self._menu_summary(),
+            text_scale=0.019, text_fg=(0.86, 0.90, 0.94, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.47),
+            text_align=TextNode.ALeft, text_wordwrap=42,
         )
 
-        # Compact driver / lobby / server settings strip.
+        # Main action deck.
         DirectFrame(
-            parent=self.menu, frameColor=(0.052, 0.068, 0.085, 1),
-            frameSize=(-1.48, 1.48, -0.155, 0.155), pos=(0, 0, -0.625),
+            parent=self.menu, frameColor=(0.035, 0.050, 0.067, 1),
+            frameSize=(-0.75, 0.75, -0.58, 0.58), pos=(0.83, 0, 0.055),
+        )
+        DirectLabel(
+            parent=self.menu, text="RACE CONTROL",
+            text_scale=0.043, text_fg=(0.95, 0.97, 0.99, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.49),
+            text_align=TextNode.ALeft,
+        )
+        DirectLabel(
+            parent=self.menu, text="Choose how you want to drive",
+            text_scale=0.022, text_fg=(0.56, 0.67, 0.76, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.22, 0, 0.40),
+            text_align=TextNode.ALeft,
+        )
+        self._menu_button("01   FREE ROAM", 0.83, 0.245, self.start_career,
+                          width=0.61, accent=True)
+        self._menu_button("02   WORLD MAP / EVENTS", 0.83, 0.055,
+                          self.start_quick_race, width=0.61)
+        self._menu_button("03   HOST LAN GAME", 0.83, -0.135,
+                          self.host_lan, width=0.61)
+        self._menu_button("04   FIND LAN GAME", 0.83, -0.325,
+                          self.join_lan, width=0.61)
+        self._menu_button("05   ONLINE ROOM", 0.83, -0.515,
+                          self.join_online, width=0.61)
+
+        # Driver identity and online connection details.
+        DirectFrame(
+            parent=self.menu, frameColor=(0.030, 0.043, 0.058, 1),
+            frameSize=(-1.60, 1.60, -0.115, 0.115), pos=(0, 0, -0.72),
         )
         DirectLabel(
             parent=self.menu, text="DRIVER",
-            text_scale=0.025, text_fg=(0.57, 0.67, 0.75, 1),
-            frameColor=(0, 0, 0, 0), pos=(-1.40, 0, -0.535),
+            text_scale=0.018, text_fg=(0.55, 0.67, 0.77, 1),
+            frameColor=(0, 0, 0, 0), pos=(-1.48, 0, -0.655),
             text_align=TextNode.ALeft,
         )
         self.nickname_entry = DirectEntry(
             parent=self.menu, initialText=str(self.game_config.get("nickname", "Driver")),
-            numLines=1, width=13, scale=0.040, pos=(-1.40, 0, -0.665),
-            frameColor=(0.11, 0.145, 0.18, 1),
-            text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
+            numLines=1, width=12, scale=0.032, pos=(-1.48, 0, -0.79),
+            frameColor=(0.10, 0.14, 0.18, 1),
+            text_fg=(0.96, 0.98, 1, 1), cursorKeys=1,
         )
         DirectLabel(
-            parent=self.menu, text="ROOM CODE",
-            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
-            frameColor=(0, 0, 0, 0), pos=(-0.43, 0, -0.535),
+            parent=self.menu, text="ROOM",
+            text_scale=0.018, text_fg=(0.55, 0.67, 0.77, 1),
+            frameColor=(0, 0, 0, 0), pos=(-0.58, 0, -0.655),
             text_align=TextNode.ALeft,
         )
         self.room_entry = DirectEntry(
             parent=self.menu, initialText=str(self.game_config.get("room", "OPEN-LOBBY")),
-            numLines=1, width=14, scale=0.040, pos=(-0.43, 0, -0.665),
-            frameColor=(0.11, 0.145, 0.18, 1),
-            text_fg=(0.96, 0.97, 0.98, 1), cursorKeys=1,
+            numLines=1, width=13, scale=0.032, pos=(-0.58, 0, -0.79),
+            frameColor=(0.10, 0.14, 0.18, 1),
+            text_fg=(0.96, 0.98, 1, 1), cursorKeys=1,
         )
         DirectLabel(
             parent=self.menu, text="ONLINE SERVER",
-            text_scale=0.020, text_fg=(0.57, 0.67, 0.75, 1),
-            frameColor=(0, 0, 0, 0), pos=(0.53, 0, -0.535),
+            text_scale=0.018, text_fg=(0.55, 0.67, 0.77, 1),
+            frameColor=(0, 0, 0, 0), pos=(0.38, 0, -0.655),
             text_align=TextNode.ALeft,
         )
         self.server_entry = DirectEntry(
             parent=self.menu,
             initialText=str(self.game_config.get("server_url", DEFAULT_SERVER_URL)),
-            numLines=1, width=34, scale=0.031, pos=(0.53, 0, -0.665),
-            frameColor=(0.11, 0.145, 0.18, 1),
-            text_fg=(0.86, 0.90, 0.93, 1), cursorKeys=1,
+            numLines=1, width=35, scale=0.029, pos=(0.38, 0, -0.79),
+            frameColor=(0.10, 0.14, 0.18, 1),
+            text_fg=(0.86, 0.91, 0.95, 1), cursorKeys=1,
         )
 
         self.menu_status = DirectLabel(
             parent=self.menu, text=self._menu_summary(),
-            text_scale=0.027, text_fg=(0.72, 0.79, 0.84, 1),
-            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.835),
+            text_scale=0.017, text_fg=(0.62, 0.72, 0.80, 1),
+            frameColor=(0, 0, 0, 0), pos=(0, 0, -0.90),
         )
-        self._menu_button("GARAGE", -1.30, -0.935, self.next_car,
+        self._menu_button("GARAGE", -1.31, -0.965, self.next_car,
+                          width=0.22, compact=True)
+        self._menu_button("WHEEL", -0.66, -0.965, self.cycle_controller_preset,
+                          width=0.22, compact=True)
+        self._menu_button("GEARBOX", 0.0, -0.965, self.cycle_transmission,
                           width=0.25, compact=True)
-        self._menu_button("WHEEL", -0.66, -0.935, self.cycle_controller_preset,
-                          width=0.25, compact=True)
-        self._menu_button("GEARBOX", 0.0, -0.935, self.cycle_transmission,
-                          width=0.29, compact=True)
-        self._menu_button("GRAPHICS", 0.66, -0.935, self.cycle_quality,
-                          width=0.25, compact=True)
-        self._menu_button("EXIT", 1.30, -0.935, self.userExit,
-                          width=0.20, compact=True, danger=True)
+        self._menu_button("GRAPHICS", 0.66, -0.965, self.cycle_quality,
+                          width=0.22, compact=True)
+        self._menu_button("EXIT", 1.31, -0.965, self.userExit,
+                          width=0.18, compact=True, danger=True)
 
         self.pause_menu = DirectFrame(
             frameColor=(0.015, 0.022, 0.032, 0.94),
@@ -772,9 +791,11 @@ class RGDVDGame(ShowBase):
             self._wheel_shift_up_was_pressed = wheel.shift_up
             self._wheel_shift_down_was_pressed = wheel.shift_down
             self.physics.on_track = self.track.contains(self.physics.x, self.physics.y)
+            previous_x, previous_y = self.physics.x, self.physics.y
             self.physics.update(Controls(
                 throttle=throttle, brake=brake, steer=steer,
                 handbrake=handbrake), dt)
+            self._resolve_route_barriers(previous_x, previous_y)
             self.car.update(self.physics.x, self.physics.y, self.physics.heading,
                             self.physics.speed, self.physics.steer_angle, dt)
             if self.audio:
@@ -799,6 +820,7 @@ class RGDVDGame(ShowBase):
         self.event_lap = 1
         self.event_laps = event.laps
         self.animated_arrows = []
+        self.route_barriers = []
         for index, point in enumerate(self.event_targets):
             if event.event_type == "CIRCUIT":
                 following = route[(index + 2) % len(route)]
@@ -823,24 +845,46 @@ class RGDVDGame(ShowBase):
     def _make_route_gate(self, point, next_x: float, next_y: float) -> None:
         if self.scene_root is None:
             return
-        gate = self.scene_root.attachNewNode("blue-arrow-checkpoint")
+        gate = self.scene_root.attachNewNode("physical-checkpoint-barrier")
         gate.setPos(point[0], point[1], 0)
         heading = math.degrees(math.atan2(-(next_x - point[0]),
                                           next_y - point[1]))
         gate.setH(heading)
+        self.route_barriers.append((float(point[0]), float(point[1]), heading))
+
+        # A broad, unmistakable barrier wall on both sides of a clear central
+        # driving lane. The panels are not just decoration: collision is
+        # resolved against these exact wall sections in _resolve_route_barriers.
+        concrete = (0.075, 0.095, 0.12, 1)
+        for side in (-1, 1):
+            panel = box(gate, "solid-checkpoint-wall",
+                        (side * 6.85, 0.0, 0.82),
+                        (6.45, 0.72, 1.64), concrete)
+            panel.setLightOff(1)
+            panel.setColorScale(0.82, 0.90, 1.0, 1)
+            # Red/white hazard plates make the wall readable at speed.
+            for stripe in range(5):
+                stripe_x = side * (4.45 + stripe * 1.08)
+                plate = box(gate, "wall-hazard-stripe",
+                            (stripe_x, -0.375, 0.84),
+                            (0.34, 0.035, 1.38),
+                            (0.92, 0.22, 0.075, 1) if stripe % 2 == 0
+                            else (0.78, 0.83, 0.86, 1))
+                plate.setLightOff(1)
+
         blue = (0.015, 0.36, 0.95, 1)
-        for side in (-10.0, 10.0):
+        for side in (-10.25, 10.25):
             post = box(gate, "blue-checkpoint-post", (side, 0, 1.35),
-                       (0.52, 0.62, 2.7), blue)
+                       (0.58, 0.72, 2.7), blue)
             post.setLightOff(1)
             post.setColorScale(0.75, 0.88, 1.25, 1)
         beam = box(gate, "blue-checkpoint-beam", (0, 0, 2.85),
-                   (20.5, 0.48, 0.48), blue)
+                   (20.9, 0.55, 0.48), blue)
         beam.setLightOff(1)
         beam.setColorScale(0.65, 0.84, 1.35, 1)
         for base_x in (-1.1, 0.0, 1.1):
             arrow = gate.attachNewNode("animated-chevron")
-            arrow.setPos(base_x, -0.28, 2.86)
+            arrow.setPos(base_x, -0.31, 2.86)
             for angle in (-42, 42):
                 segment = box(arrow, "arrow-segment", (0, 0, 0),
                               (0.13, 0.12, 0.54), (0.18, 0.72, 1.0, 1))
@@ -848,6 +892,26 @@ class RGDVDGame(ShowBase):
                 segment.setLightOff(1)
                 segment.setColorScale(0.55, 0.85, 1.45, 1)
             self.animated_arrows.append((arrow, base_x))
+
+    def _resolve_route_barriers(self, previous_x: float, previous_y: float) -> None:
+        """Stop the car against checkpoint wall panels while leaving a wide lane."""
+        if self.physics is None or not self.route_barriers:
+            return
+        for wall_x, wall_y, heading_deg in self.route_barriers:
+            dx = self.physics.x - wall_x
+            dy = self.physics.y - wall_y
+            angle = math.radians(heading_deg)
+            # Gate-local X runs across the road; local Y follows the route.
+            local_x = dx * math.cos(angle) + dy * math.sin(angle)
+            local_y = -dx * math.sin(angle) + dy * math.cos(angle)
+            # The middle 6.8 m stays open. Both wall wings occupy the shoulders.
+            if 2.55 < abs(local_x) < 11.65 and abs(local_y) < 2.75:
+                self.physics.x = previous_x
+                self.physics.y = previous_y
+                self.physics.speed = 0.0
+                self.physics.lateral_speed = 0.0
+                self.physics.yaw_rate = 0.0
+                break
 
     def _animate_route_arrows(self) -> None:
         for index, (arrow, base_x) in enumerate(self.animated_arrows):
