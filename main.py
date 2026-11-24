@@ -656,7 +656,9 @@ class RGDVDGame(ShowBase):
         self.event_laps = event.laps
         self.animated_arrows = []
         for index, point in enumerate(self.event_targets):
-            if index + 2 < len(route):
+            if event.event_type == "CIRCUIT":
+                following = route[(index + 2) % len(route)]
+            elif index + 2 < len(route):
                 following = route[index + 2]
             else:
                 previous = route[index]
