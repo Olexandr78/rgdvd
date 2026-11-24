@@ -561,6 +561,7 @@ class RGDVDGame(ShowBase):
             self.state = "RACING"
             self.hud_text.show()
             self.hud_bottom.show()
+            self.gauge_root.show()
             if self.audio:
                 self.audio.start()
 
@@ -938,6 +939,7 @@ class RGDVDGame(ShowBase):
         self.pause_menu.hide()
         self.hud_text.hide()
         self.hud_bottom.hide()
+        self.gauge_root.hide()
         self.result_menu.show()
 
     def _refresh_hud_status(self, message: str) -> None:
