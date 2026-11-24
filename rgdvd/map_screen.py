@@ -45,7 +45,7 @@ class WorldMapScreen:
         for event in EVENTS:
             x, y = self._map_point(*event.start)
             button = DirectButton(
-                parent=self.root, text="◆", text_scale=0.030,
+                parent=self.root, text="X", text_scale=0.030,
                 text_fg=(0.20, 0.78, 1.0, 1),
                 frameColor=(0, 0, 0, 0), relief=DGG.FLAT,
                 frameSize=(-0.025, 0.025, -0.025, 0.025),
@@ -56,7 +56,7 @@ class WorldMapScreen:
             self.markers[event.event_id] = button
 
         self.player_marker = DirectLabel(
-            parent=self.root, text="▲", text_scale=0.060,
+            parent=self.root, text="^", text_scale=0.060,
             text_fg=(1.0, 0.76, 0.16, 1),
             frameColor=(0, 0, 0, 0), pos=(-0.52, 0, -0.04),
         )
