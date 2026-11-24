@@ -836,25 +836,36 @@ class RGDVDGame(ShowBase):
         gate.setH(heading)
         self.route_barriers.append((float(point[0]), float(point[1]), heading))
 
-        # A broad, unmistakable barrier wall on both sides of a clear central
-        # driving lane. The panels are not just decoration: collision is
-        # resolved against these exact wall sections in _resolve_route_barriers.
-        concrete = (0.075, 0.095, 0.12, 1)
+        # Build recognizable modular concrete Jersey barriers, not giant floating slabs.
+        concrete = (0.43, 0.47, 0.49, 1)
+        concrete_top = (0.54, 0.57, 0.58, 1)
+        reflector_red = (0.92, 0.12, 0.055, 1)
+        reflector_white = (0.92, 0.93, 0.88, 1)
+        # Two separated wings leave a 7.2 m racing lane through the checkpoint.
         for side in (-1, 1):
-            panel = box(gate, "solid-checkpoint-wall",
-                        (side * 6.85, 0.0, 0.82),
-                        (6.45, 0.72, 1.64), concrete)
-            panel.setLightOff(1)
-            panel.setColorScale(0.82, 0.90, 1.0, 1)
-            # Red/white hazard plates make the wall readable at speed.
-            for stripe in range(5):
-                stripe_x = side * (4.45 + stripe * 1.08)
-                plate = box(gate, "wall-hazard-stripe",
-                            (stripe_x, -0.375, 0.84),
-                            (0.34, 0.035, 1.38),
-                            (0.92, 0.22, 0.075, 1) if stripe % 2 == 0
-                            else (0.78, 0.83, 0.86, 1))
+            for module in range(3):
+                center_x = side * (4.75 + module * 2.05)
+                base = box(gate, "jersey-barrier-base",
+                           (center_x, 0.0, 0.31), (1.98, 0.92, 0.62), concrete)
+                base.setLightOff(1)
+                base.setColorScale(0.92, 0.96, 1.0, 1)
+                upper = box(gate, "jersey-barrier-upper",
+                            (center_x, 0.0, 0.76), (1.98, 0.58, 0.34), concrete_top)
+                upper.setLightOff(1)
+                cap = box(gate, "jersey-barrier-top",
+                          (center_x, 0.0, 0.95), (2.02, 0.62, 0.06), concrete_top)
+                cap.setLightOff(1)
+                # Reflective red/white panels face approaching traffic.
+                plate = box(gate, "barrier-reflector",
+                            (center_x, -0.477, 0.59),
+                            (0.42, 0.035, 0.42),
+                            reflector_red if module % 2 == 0 else reflector_white)
                 plate.setLightOff(1)
+                plate2 = box(gate, "barrier-reflector-side",
+                             (center_x, 0.477, 0.59),
+                             (0.42, 0.035, 0.42),
+                             reflector_white if module % 2 == 0 else reflector_red)
+                plate2.setLightOff(1)
 
         blue = (0.015, 0.36, 0.95, 1)
         for side in (-10.25, 10.25):
