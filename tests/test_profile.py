@@ -11,6 +11,7 @@ class CareerProfileTests(unittest.TestCase):
             profile = CareerProfile(Path(folder) / "career.json")
             self.assertEqual(profile.credits, CareerProfile.STARTING_CREDITS)
             self.assertTrue(profile.is_unlocked("street_gt"))
+            self.assertTrue(profile.is_unlocked("volga_2410"))
             self.assertFalse(profile.is_unlocked("touring_v8"))
 
     def test_race_payout_and_persistence(self):
