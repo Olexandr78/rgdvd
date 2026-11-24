@@ -246,9 +246,12 @@ class UrbanCity:
 
     def _build_street_furniture(self) -> None:
         # Streetlights, traffic signals, poles, bins and occasional trees.
+        # Place lamps on alternating avenues and every other block. This
+        # keeps the city readable while avoiding hundreds of tiny draw calls
+        # on integrated GPUs.
         for axis in ("x", "y"):
-            for road_index in range(-8, 9):
-                for step in range(-4, 5):
+            for road_index in range(-8, 9, 2):
+                for step in range(-4, 5, 2):
                     along = step * 120.0 + 36.0
                     across = road_index * self.GRID + (10.0 if (step + road_index) % 2 else -10.0)
                     x, y = (across, along) if axis == "x" else (along, across)
