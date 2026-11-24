@@ -26,6 +26,7 @@ from rgdvd.audio import VehicleAudio
 from rgdvd.events import EVENT_BY_ID
 from rgdvd.map_screen import WorldMapScreen
 from rgdvd.geometry import box
+from rgdvd.controllers import WheelInput, PRESETS, PRESET_LABELS
 
 
 loadPrcFileData("", "win-size 1366 768")
@@ -90,6 +91,7 @@ class RGDVDGame(ShowBase):
             "w", "s", "a", "d", "arrow_up", "arrow_down",
             "arrow_left", "arrow_right", "space",
         )}
+        self.wheel_input = WheelInput(self, self.config)
         self._setup_menu()
         self.map_screen = WorldMapScreen(
             self.aspect2d, self.start_selected_event, self.close_world_map)
@@ -239,12 +241,14 @@ class RGDVDGame(ShowBase):
             text_scale=0.027, text_fg=(0.72, 0.79, 0.84, 1),
             frameColor=(0, 0, 0, 0), pos=(0, 0, -0.835),
         )
-        self._menu_button("GARAGE / NEXT CAR", -0.78, -0.935, self.next_car,
-                          width=0.48, compact=True)
-        self._menu_button("GRAPHICS", 0.0, -0.935, self.cycle_quality,
-                          width=0.40, compact=True)
-        self._menu_button("EXIT", 0.78, -0.935, self.userExit,
-                          width=0.40, compact=True, danger=True)
+        self._menu_button("GARAGE / NEXT CAR", -1.05, -0.935, self.next_car,
+                          width=0.43, compact=True)
+        self._menu_button("WHEEL PRESET", -0.34, -0.935, self.cycle_controller_preset,
+                          width=0.43, compact=True)
+        self._menu_button("GRAPHICS", 0.43, -0.935, self.cycle_quality,
+                          width=0.34, compact=True)
+        self._menu_button("EXIT", 1.15, -0.935, self.userExit,
+                          width=0.25, compact=True, danger=True)
 
         self.pause_menu = DirectFrame(
             frameColor=(0.015, 0.022, 0.032, 0.94),
@@ -333,9 +337,11 @@ class RGDVDGame(ShowBase):
         car_name = get_car_spec(self.car_id)["name"]
         quality = str(self.config.get("quality", "medium")).upper()
         unlocked_count = len(unlocked_cars(self.profile.data.get("unlocked_cars", [])))
+        preset = PRESET_LABELS.get(self.wheel_input.requested_preset, "AUTO DETECT")
         return (f"CAREER  {races} RACES / {wins} WINS     "
                 f"CREDITS  {self.profile.credits:,}     "
-                f"CAR  {car_name} ({unlocked_count}/{len(CAR_SPECS)})     GRAPHICS  {quality}")
+                f"CAR  {car_name} ({unlocked_count}/{len(CAR_SPECS)})     "
+                f"GRAPHICS  {quality}     WHEEL  {preset}")
 
     def _refresh_menu(self, message: str | None = None) -> None:
         self.menu_status["text"] = message or self._menu_summary()
@@ -362,6 +368,7 @@ class RGDVDGame(ShowBase):
         self.accept("escape", self.toggle_pause)
         self.accept("r", self.restart_race)
         self.accept("m", self.toggle_world_map)
+        self.accept("f6", self.cycle_controller_preset)
 
     def _set_control(self, key: str, value: bool) -> None:
         self.controls[key] = value
@@ -382,6 +389,15 @@ class RGDVDGame(ShowBase):
         self.car_id = owned[(current_index + 1) % len(owned)]
         self._save_menu_settings()
         self._refresh_menu()
+
+    def cycle_controller_preset(self) -> None:
+        current = self.wheel_input.requested_preset
+        index = PRESETS.index(current) if current in PRESETS else 0
+        preset = PRESETS[(index + 1) % len(PRESETS)]
+        self.wheel_input.set_preset(preset)
+        save_config(self.config)
+        label = PRESET_LABELS[preset]
+        self._refresh_menu(f"CONTROL PROFILE: {label}  |  Reconnect the wheel if needed.")
 
     def cycle_quality(self) -> None:
         qualities = ("low", "medium", "high")
@@ -623,20 +639,25 @@ class RGDVDGame(ShowBase):
     def _game_update(self, task):
         dt = min(globalClock.getDt(), 1.0 / 30.0)
         if self.state == "RACING" and self.physics and self.car and self.track:
-            throttle = float(self.controls["w"] or self.controls["arrow_up"])
-            brake = float(self.controls["s"] or self.controls["arrow_down"])
-            steer = float(self.controls["a"] or self.controls["arrow_left"]) - float(
+            wheel = self.wheel_input.read()
+            keyboard_throttle = float(self.controls["w"] or self.controls["arrow_up"])
+            keyboard_brake = float(self.controls["s"] or self.controls["arrow_down"])
+            keyboard_steer = float(self.controls["a"] or self.controls["arrow_left"]) - float(
                 self.controls["d"] or self.controls["arrow_right"])
+            throttle = max(keyboard_throttle, wheel.throttle)
+            brake = max(keyboard_brake, wheel.brake)
+            steer = wheel.steer if wheel.connected else keyboard_steer
+            handbrake = bool(self.controls["space"] or wheel.handbrake)
             self.physics.on_track = self.track.contains(self.physics.x, self.physics.y)
             self.physics.update(Controls(
                 throttle=throttle, brake=brake, steer=steer,
-                handbrake=self.controls["space"]), dt)
+                handbrake=handbrake), dt)
             self.car.update(self.physics.x, self.physics.y, self.physics.heading,
                             self.physics.speed, self.physics.steer_angle, dt)
             if self.audio:
                 self.audio.update(self.physics.rpm, throttle,
                                   self.physics.lateral_speed,
-                                  self.controls["space"], self.physics.gear)
+                                  handbrake, self.physics.gear)
             self._animate_route_arrows()
             if self.current_event is not None:
                 self._update_event_progress()
