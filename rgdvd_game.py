@@ -688,8 +688,8 @@ class RGDVDGame(ShowBase):
         # Open-world street driving: no circuit racing line or lap AI.
         self.ai_drivers = []
         self.remote_cars = {}
-        self.camera.setPos(0, -139, 7)
-        self.camera.lookAt(0, -120, 1)
+        self.camera.setPos(0, -136, 9)
+        self.camera.lookAt(0, -120, 1.2)
 
     def start_race(self, mode: str = "QUICK",
                    event_id: str | None = None) -> None:
@@ -823,8 +823,8 @@ class RGDVDGame(ShowBase):
         heading = math.atan2(-dx, dy)
         self.physics.reset(start_x, start_y, heading)
         self.car.reset_pose(start_x, start_y, heading)
-        self.camera.setPos(start_x, start_y - 18, 7)
-        self.camera.lookAt(start_x, start_y, 1)
+        self.camera.setPos(start_x, start_y - 18, 9)
+        self.camera.lookAt(start_x, start_y, 1.2)
 
     def _make_route_gate(self, point, next_x: float, next_y: float) -> None:
         if self.scene_root is None:
@@ -1021,8 +1021,8 @@ class RGDVDGame(ShowBase):
         else:
             event_line = f"FREE ROAM  /  {self._format_time(self.race_time)}"
         self.hud_text.setText(
-            f"RGDVD  /  {self.mode}\\n"
-            f"DIST  {p.distance_m / 1000.0:07.2f} km\\n"
+            f"RGDVD  /  {self.mode}\n"
+            f"DIST  {p.distance_m / 1000.0:07.2f} km\n"
             f"{event_line}{network_line}{offroad}"
         )
         self._update_dashboard_gauges()
@@ -1036,12 +1036,12 @@ class RGDVDGame(ShowBase):
             p = self.physics
             fx, fy = -math.sin(p.heading), math.cos(p.heading)
             speed_factor = min(1.0, abs(p.speed) / 55.0)
-            distance = 10.5 + speed_factor * 2.0
+            distance = 13.5 + speed_factor * 2.5
             desired_x = p.x - fx * distance
             desired_y = p.y - fy * distance
-            desired_z = 4.1 + speed_factor * 1.7
+            desired_z = 6.0 + speed_factor * 1.8
             current = self.camera.getPos()
-            blend = min(1.0, dt * 4.5)
+            blend = min(1.0, dt * 3.6)
             self.camera.setPos(
                 current.x + (desired_x-current.x)*blend,
                 current.y + (desired_y-current.y)*blend,
