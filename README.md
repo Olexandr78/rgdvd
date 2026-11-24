@@ -6,11 +6,11 @@
 
 ### Driving and race content
 - Procedural GT-style sports car with a multi-section body, glazing, alloy wheels, brake discs, lights, wing, mirrors and exhausts.
-- Closed circuit with procedural tiled asphalt, painted kerbs, road markings, barriers, pit building, grandstand, floodlight masts, trees and distant terrain.
-- Three AI opponents for career and quick races.
+- Large open city (approximately 1.9 × 1.9 km playable grid) with connected avenues, intersections, lane markings, crosswalks, sidewalks, mixed-use blocks, office towers, apartments, industrial warehouses, shopfronts, rooftop equipment, streetlights, trees and a distant skyline.
+- Free-roam street driving with no closed-circuit lap loop.
 - Chase camera, speedometer, tachometer, automatic six-speed gearbox, lap counter, timer and best lap.
 - Vehicle model with an engine torque curve, gears, braking, reverse, speed-dependent steering, lateral slip, handbrake, drag and off-track penalties.
-- Main menu, pause, restart, three-lap event, career rewards, local save profile, credits and four garage vehicles with unlockable handling presets.
+- Main menu, pause, restart, local save profile, credits and four garage vehicles with unlockable handling presets.
 - Selectable paint colours and low/medium/high graphics presets.
 
 ### Offline
@@ -79,12 +79,11 @@ The design target is **up to 4 GB system RAM**, using small procedural textures 
 ## Project layout
 
 ~~~text
-main.py                  Panda3D client, menus, race loop, HUD and camera
+main.py                  Panda3D client, menus, free-roam loop, HUD and camera
+rgdvd/city.py            Open-world urban environment
 rgdvd/physics.py         Vehicle dynamics
 rgdvd/geometry.py        Procedural mesh builders
 rgdvd/vehicle.py         Procedural sports-car assembly
-rgdvd/track.py           Circuit and scenery
-rgdvd/ai.py              Racing-line AI
 rgdvd/profile.py         Offline career save and unlock progression
 rgdvd/config.py          Local settings
 rgdvd/network.py         UDP LAN discovery and state relay
@@ -97,4 +96,4 @@ tests/                   Physics, networking and profile tests
 
 ## Honest limitations of this build
 
-This is a connected playable prototype foundation, not a finished photorealistic AAA racing game. The car and environment are procedural meshes rather than high-detail artist-made models or scanned materials. Suspension, tyre contact patches, deformable damage, weather, sound design, traffic, multiple tracks, authoritative online simulation, player accounts, persistent online leaderboards, collision synchronization, and final DVD size/performance validation remain incomplete.
+This is a connected playable prototype foundation, not a finished photorealistic AAA racing game. The car and city are currently procedural geometry, not photogrammetry or licensed high-detail artist-made assets; this is a larger street-city prototype, not photorealism. Suspension, tyre contact patches, deformable damage, weather, sound design, moving civilian traffic, street-race event logic, authoritative online simulation, player accounts, persistent online leaderboards, collision synchronization, and final DVD size/performance validation remain incomplete.
