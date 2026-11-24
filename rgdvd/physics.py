@@ -124,6 +124,12 @@ class VehiclePhysics:
                 self.speed = max(-self.MAX_REVERSE_MPS,
                                  self.speed - 4.5 * brake * dt)
 
+        # The handbrake locks the rear axle independently of the service
+        # brake. This makes Space / a mapped wheel button useful even when
+        # the player is not also pressing the normal brake pedal.
+        if handbrake and self.speed > 0.0:
+            self.speed = max(0.0, self.speed - 3.2 * dt)
+
         drag = 0.20 + 0.00034 * self.speed * self.speed
         if not self.on_track:
             drag += 2.4
@@ -143,12 +149,14 @@ class VehiclePhysics:
             grip *= 0.46
         self.yaw_rate = (self.speed / self.WHEELBASE_M) * math.tan(self.steer_angle)
         self.yaw_rate *= grip
+        if handbrake:
+            self.yaw_rate *= 1.22
         self.heading += self.yaw_rate * dt
 
-        rightward_target = -steer * speed_abs * (0.24 if handbrake else 0.025)
+        rightward_target = -steer * speed_abs * (0.48 if handbrake else 0.025)
         if not self.on_track:
             rightward_target *= 0.55
-        side_response = 2.0 if handbrake else 7.0
+        side_response = 2.8 if handbrake else 7.0
         self.lateral_speed = self._lerp(self.lateral_speed, rightward_target,
                                         dt * side_response)
         if abs(steer) < 0.02 and not handbrake:
