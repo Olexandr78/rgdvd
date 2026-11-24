@@ -7,10 +7,13 @@
 ### Driving and race content
 - Procedural GT-style sports car with a multi-section body, glazing, alloy wheels, brake discs, lights, wing, mirrors and exhausts.
 - Large open city (approximately 1.9 × 1.9 km playable grid) with connected avenues, intersections, lane markings, crosswalks, sidewalks, mixed-use blocks, office towers, apartments, industrial warehouses, shopfronts, rooftop equipment, streetlights, trees and a distant skyline.
-- Free-roam street driving with no closed-circuit lap loop.
-- Chase camera, speedometer, tachometer, automatic six-speed gearbox, lap counter, timer and best lap.
+- Interactive overhead city map with player position and 53 selectable event routes: 24 two-lap circuits and 29 point-to-point sprints.
+- Blue illuminated checkpoint gates with animated chevrons, event timer, checkpoint progression and career rewards.
+- Free-roam street driving with no closed-circuit lap loop; press M to open the city map while driving.
+- Chase camera, speedometer, tachometer, automatic six-speed gearbox, race timer and event progress HUD.
 - Vehicle model with an engine torque curve, gears, braking, reverse, speed-dependent steering, lateral slip, handbrake, drag and off-track penalties.
-- Main menu, pause, restart, local save profile, credits and four garage vehicles with unlockable handling presets.
+- Night-racing themed main menu, pause, restart, local save profile, credits and five garage vehicles, including a drivable procedural Volga GAZ-24-10.
+- Runtime-generated engine, tyre-slip and gear-change audio; no external sound packs are required.
 - Selectable paint colours and low/medium/high graphics presets.
 
 ### Offline
@@ -58,6 +61,7 @@ On Windows, run_windows.bat checks and installs dependencies before launch.
 | D / Right | Steer right |
 | Space | Handbrake |
 | R | Restart race |
+| M | Open / close city map |
 | Esc | Pause / resume |
 
 ## DVD / offline Windows build
@@ -81,9 +85,12 @@ The design target is **up to 4 GB system RAM**, using small procedural textures 
 ~~~text
 main.py                  Panda3D client, menus, free-roam loop, HUD and camera
 rgdvd/city.py            Open-world urban environment
+rgdvd/events.py          53 original circuit and sprint routes
+rgdvd/map_screen.py      Overhead map and event selection
+rgdvd/audio.py           Synthesized engine, tyre and shift sounds
 rgdvd/physics.py         Vehicle dynamics
 rgdvd/geometry.py        Procedural mesh builders
-rgdvd/vehicle.py         Procedural sports-car assembly
+rgdvd/vehicle.py         Sports cars and procedural Volga GAZ-24-10
 rgdvd/profile.py         Offline career save and unlock progression
 rgdvd/config.py          Local settings
 rgdvd/network.py         UDP LAN discovery and state relay
@@ -96,4 +103,4 @@ tests/                   Physics, networking and profile tests
 
 ## Honest limitations of this build
 
-This is a connected playable prototype foundation, not a finished photorealistic AAA racing game. The car and city are currently procedural geometry, not photogrammetry or licensed high-detail artist-made assets; this is a larger street-city prototype, not photorealism. Suspension, tyre contact patches, deformable damage, weather, sound design, moving civilian traffic, street-race event logic, authoritative online simulation, player accounts, persistent online leaderboards, collision synchronization, and final DVD size/performance validation remain incomplete.
+This is a connected playable prototype foundation, not a finished photorealistic AAA racing game. The car and city are currently procedural geometry, not photogrammetry or licensed high-detail artist-made assets; this is a larger street-city prototype, not photorealism. The 53 selectable events currently run as solo checkpoint/time-trial routes: rival AI racers, police pursuits, drift scoring, traffic, collision-aware barrier physics, and fully simulated race opponents are not implemented yet. Engine and tyre sounds are synthesized at runtime rather than recorded from real cars. The Volga is an original low-poly procedural interpretation, not a scanned model. Suspension, tyre contact patches, deformable damage, weather, authoritative online simulation, player accounts, persistent online leaderboards, collision synchronization, and final DVD size/performance validation remain incomplete.
